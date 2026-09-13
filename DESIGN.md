@@ -19,8 +19,8 @@ All implementation colors use OKLCH.
 - Success: `oklch(0.48 0.12 155)`
 - Error: `oklch(0.50 0.18 25)`
 
-Blue carries primary actions and the opening atmosphere. Vermilion is limited to the seal, spark, and tiny moments of surprise.
-The personalized name is the dominant opening element: solid dark blue for clarity, underlined by a short blue-to-vermilion light trail.
+Blue carries primary actions and the fallback opening atmosphere. Vermilion is limited to the seal, spark, and tiny moments of surprise.
+The personalized name is the dominant opening element. Its solid light or dark treatment follows the detected brightness of the selected photo.
 
 ## Typography
 
@@ -38,7 +38,9 @@ Four-point base scale: 4, 8, 12, 16, 24, 32, 48, 64, 96px. Related controls use 
 - Buttons use full-pill geometry, 48–52px touch height, clear focus rings, and restrained press feedback.
 - Guest choices use a two-step confirmation pattern. The first tap reveals the selected answer and a cancel control; the second confirms it.
 - Inputs use 12px corners, persistent labels, 48px minimum height, and inline errors.
+- The photo picker compresses locally, previews the final contrast treatment, and allows a manual light/dark override.
 - Panels use 16px corners maximum, either a hairline border or a shallow shadow, never both.
+- Translucent panels are reserved for the guest copy placed over photography; blur exists only to preserve legibility.
 - The envelope and letter are semantic HTML/CSS shapes with paper texture restricted to those objects.
 
 ## Motion
@@ -52,4 +54,4 @@ Four-point base scale: 4, 8, 12, 16, 24, 32, 48, 64, 96px. Related controls use 
 
 ## Responsive Behavior
 
-The guest flow is a single-purpose viewport at every size. The private generator is one column on phones and becomes a two-part composition only when space comfortably permits it. Safe-area insets and 44px minimum targets are mandatory.
+The guest flow is a single-purpose viewport at every size. Its chosen photo persists through greeting, letter, and result. The private generator is one column on phones and becomes a two-part composition only when space comfortably permits it. Safe-area insets and 44px minimum targets are mandatory.

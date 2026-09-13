@@ -9,5 +9,12 @@ export default async function InvitationPage({ params }: { params: Promise<{ tok
   const invite = await getInvite(token);
   if (!invite) notFound();
 
-  return <InvitationExperience token={invite.token} name={invite.name} />;
+  return (
+    <InvitationExperience
+      token={invite.token}
+      name={invite.name}
+      backgroundPath={invite.backgroundPath}
+      backgroundTone={invite.backgroundTone}
+    />
+  );
 }

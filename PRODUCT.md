@@ -14,7 +14,7 @@ Un solo amministratore usa lo strumento in privato per preparare e condividere i
 
 ## Product Purpose
 
-Creare una piccola esperienza-gioco personale: l'amministratore inserisce un nome, genera un link univoco e lo invia. Il destinatario viene accolto per nome, scopre una lettera animata e arriva a una domanda in cui ogni risposta conduce scherzosamente al sì prima di una conferma esplicita.
+Creare una piccola esperienza-gioco personale: l'amministratore inserisce un nome, sceglie una foto significativa, genera un link univoco e lo invia. Il destinatario viene accolto per nome dentro quell'immagine, scopre una lettera animata e arriva a una domanda in cui ogni risposta conduce scherzosamente al sì prima di una conferma esplicita.
 
 Il prodotto ha successo quando preparare il link richiede pochi secondi e la rivelazione risulta fluida, sorprendente e divertente.
 
@@ -33,6 +33,7 @@ Evitare interfacce affollate, dashboard aziendali, estetica da cartolina romanti
 ## Design Principles
 
 - Una sola azione evidente per momento.
+- Ogni invito deve contenere almeno una scelta riconoscibile come specifica di quella persona.
 - La sorpresa cresce per passaggi brevi, mai tramite spiegazioni.
 - Il gioco deve funzionare altrettanto bene con dito, mouse e tastiera.
 - L'area amministrativa resta discreta; l'invito riceve tutta la personalità.

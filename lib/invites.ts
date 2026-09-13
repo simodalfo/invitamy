@@ -6,7 +6,11 @@ export type Invite = {
   token: string;
   name: string;
   createdAt: string;
+  backgroundPath?: string;
+  backgroundTone?: BackgroundTone;
 };
+
+export type BackgroundTone = "light" | "dark";
 
 const TOKEN_VERSION = 1;
 const IV_LENGTH = 12;
@@ -26,20 +30,39 @@ export function normalizeName(value: unknown) {
   return Array.from(value.trim().replace(/\s+/g, " ")).slice(0, 40).join("");
 }
 
-export async function createInvite(name: string): Promise<Invite> {
+export function normalizeBackgroundPath(value: unknown) {
+  if (typeof value !== "string") return "";
+  const path = value.trim();
+  if (!/^invitamy\/[a-zA-Z0-9._/-]{1,240}$/.test(path) || path.includes("..")) return "";
+  return path;
+}
+
+export function normalizeBackgroundTone(value: unknown): BackgroundTone | undefined {
+  return value === "light" || value === "dark" ? value : undefined;
+}
+
+export async function createInvite(
+  name: string,
+  background?: { path: string; tone: BackgroundTone },
+): Promise<Invite> {
   const createdAt = new Date().toISOString();
   const iv = randomBytes(IV_LENGTH);
   const cipher = createCipheriv("aes-256-gcm", encryptionKey(), iv);
-  const plaintext = Buffer.from(JSON.stringify({ name, createdAt }), "utf8");
+  const payload = {
+    name,
+    createdAt,
+    ...(background ? { backgroundPath: background.path, backgroundTone: background.tone } : {}),
+  };
+  const plaintext = Buffer.from(JSON.stringify(payload), "utf8");
   const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
   const authTag = cipher.getAuthTag();
   const token = Buffer.concat([Buffer.from([TOKEN_VERSION]), iv, authTag, encrypted]).toString("base64url");
 
-  return { token, name, createdAt };
+  return { token, ...payload };
 }
 
 export async function getInvite(token: string): Promise<Invite | null> {
-  if (!/^[a-zA-Z0-9_-]{48,300}$/.test(token)) return null;
+  if (!/^[a-zA-Z0-9_-]{48,1024}$/.test(token)) return null;
 
   try {
     const packed = Buffer.from(token, "base64url");
@@ -51,11 +74,23 @@ export async function getInvite(token: string): Promise<Invite | null> {
     const decipher = createDecipheriv("aes-256-gcm", encryptionKey(), iv);
     decipher.setAuthTag(authTag);
     const plaintext = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
-    const parsed = JSON.parse(plaintext) as { name?: unknown; createdAt?: unknown };
+    const parsed = JSON.parse(plaintext) as {
+      name?: unknown;
+      createdAt?: unknown;
+      backgroundPath?: unknown;
+      backgroundTone?: unknown;
+    };
     const name = normalizeName(parsed.name);
+    const backgroundPath = normalizeBackgroundPath(parsed.backgroundPath);
+    const backgroundTone = normalizeBackgroundTone(parsed.backgroundTone);
 
     if (!name || typeof parsed.createdAt !== "string") return null;
-    return { token, name, createdAt: parsed.createdAt };
+    return {
+      token,
+      name,
+      createdAt: parsed.createdAt,
+      ...(backgroundPath && backgroundTone ? { backgroundPath, backgroundTone } : {}),
+    };
   } catch {
     return null;
   }

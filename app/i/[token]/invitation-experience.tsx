@@ -1,6 +1,7 @@
 "use client";
 
 import { PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
+import type { BackgroundTone } from "@/lib/invites";
 
 type Phase = "intro" | "ready" | "letter" | "answered";
 type TrickChoice = "no" | "maybe";
@@ -28,7 +29,17 @@ function CloseIcon() {
   );
 }
 
-export function InvitationExperience({ token, name }: { token: string; name: string }) {
+export function InvitationExperience({
+  token,
+  name,
+  backgroundPath,
+  backgroundTone,
+}: {
+  token: string;
+  name: string;
+  backgroundPath?: string;
+  backgroundTone?: BackgroundTone;
+}) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [showFold, setShowFold] = useState(false);
   const [nearbyChoice, setNearbyChoice] = useState<TrickChoice | null>(null);
@@ -36,6 +47,8 @@ export function InvitationExperience({ token, name }: { token: string; name: str
   const [responseError, setResponseError] = useState("");
   const noRef = useRef<HTMLButtonElement>(null);
   const maybeRef = useRef<HTMLButtonElement>(null);
+  const hasPhoto = Boolean(backgroundPath && backgroundTone);
+  const backgroundUrl = hasPhoto ? `/api/invites/${token}/background` : undefined;
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -109,10 +122,17 @@ export function InvitationExperience({ token, name }: { token: string; name: str
 
   return (
     <main
-      className={`invite-scene phase-${phase}`}
+      className={`invite-scene phase-${phase}${hasPhoto ? ` has-photo on-${backgroundTone}` : ""}`}
       id="main-content"
       onPointerMove={phase === "letter" ? handleProximity : undefined}
     >
+      {backgroundUrl ? (
+        <div
+          className="invite-photo"
+          style={{ backgroundImage: `url(${JSON.stringify(backgroundUrl)})` }}
+          aria-hidden="true"
+        />
+      ) : null}
       <div className="sky-field" aria-hidden="true">
         <span className="sky-spark">✦</span>
         <span className="sky-arc" />
@@ -197,28 +217,24 @@ export function InvitationExperience({ token, name }: { token: string; name: str
                 );
               })}
             </div>
-            <p className="trick-hint" aria-live="polite">
-              {confirmingChoice ? (
-                <>
-                  Confermi la tua scelta? <strong>{getChoiceLabel(confirmingChoice)}</strong>
-                </>
-              ) : nearbyChoice ? (
-                "Ops. Sembra che il sito abbia già deciso."
-              ) : (
-                "Scegli liberamente. Più o meno."
-              )}
-            </p>
+            {confirmingChoice ? (
+              <p className="trick-hint" aria-live="polite">
+                Confermi la tua scelta? <strong>{getChoiceLabel(confirmingChoice)}</strong>
+              </p>
+            ) : null}
           </div>
         </section>
       ) : null}
 
       {phase === "answered" ? (
         <section className="answer-screen" aria-labelledby="answer-title">
-          <span className="answer-spark" aria-hidden="true">✦</span>
-          <p>Risposta ricevuta</p>
-          <h1 id="answer-title">Lo sapevo.</h1>
-          <span className="answer-note">Ci vediamo questa settimana.</span>
-          {responseError ? <p className="field-error answer-error" role="alert">{responseError}</p> : null}
+          <div className="answer-content">
+            <span className="answer-spark" aria-hidden="true">✦</span>
+            <p>Risposta ricevuta</p>
+            <h1 id="answer-title">Lo sapevo.</h1>
+            <span className="answer-note">Ci vediamo questa settimana.</span>
+            {responseError ? <p className="field-error answer-error" role="alert">{responseError}</p> : null}
+          </div>
         </section>
       ) : null}
     </main>
