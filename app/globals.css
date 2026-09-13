@@ -34,7 +34,6 @@
   --radius-lg: 1rem;
   --z-content: 1;
   --z-fold: 2;
-  --z-spark: 3;
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   color-scheme: light;
@@ -663,27 +662,6 @@ button:disabled {
   filter: none;
 }
 
-.sky-spark {
-  position: absolute;
-  top: max(9%, env(safe-area-inset-top));
-  right: 10%;
-  color: var(--color-secret);
-  font-size: var(--text-heading);
-  animation: spark-in 700ms 500ms var(--ease-out-expo) both;
-}
-
-.sky-arc {
-  position: absolute;
-  top: 17%;
-  right: 15%;
-  width: 7rem;
-  height: 4rem;
-  border-bottom: 0.0625rem solid var(--guest-ink);
-  border-radius: 50%;
-  transform: rotate(-24deg);
-  opacity: 0.86;
-}
-
 .invite-intro {
   display: flex;
   min-height: 100svh;
@@ -885,16 +863,6 @@ button:disabled {
   animation: fold-away 780ms 180ms var(--ease-out-expo) both;
   backface-visibility: hidden;
   pointer-events: none;
-}
-
-.letter-spark {
-  position: absolute;
-  top: max(var(--space-xl), env(safe-area-inset-top));
-  right: max(var(--space-lg), env(safe-area-inset-right));
-  z-index: var(--z-spark);
-  color: var(--color-secret);
-  font-size: var(--text-heading);
-  animation: spark-in 520ms 680ms var(--ease-out-expo) both;
 }
 
 .letter-content {
@@ -1117,12 +1085,6 @@ button:disabled {
   letter-spacing: -0.035em;
 }
 
-.answer-spark {
-  color: var(--color-secret);
-  font-size: var(--text-heading);
-  animation: spark-pop 520ms 300ms var(--ease-out-expo) both;
-}
-
 .answer-note {
   color: var(--guest-muted);
 }
@@ -1176,11 +1138,6 @@ button:disabled {
   to { opacity: 1; transform: scale(1); filter: blur(0); }
 }
 
-@keyframes spark-in {
-  from { opacity: 0.6; transform: scale(0.5) rotate(-18deg); }
-  to { opacity: 1; transform: scale(1) rotate(0); }
-}
-
 @keyframes fold-away {
   0% { opacity: 1; transform: perspective(50rem) rotateX(0deg); }
   75% { opacity: 0.9; }
@@ -1201,11 +1158,6 @@ button:disabled {
 @keyframes answer-in {
   from { opacity: 0.72; filter: blur(0.25rem); }
   to { opacity: 1; filter: blur(0); }
-}
-
-@keyframes spark-pop {
-  from { opacity: 0.6; transform: scale(0.4) rotate(-30deg); }
-  to { opacity: 1; transform: scale(1) rotate(0); }
 }
 
 @media (min-width: 48rem) {

@@ -19,7 +19,7 @@ All implementation colors use OKLCH.
 - Success: `oklch(0.48 0.12 155)`
 - Error: `oklch(0.50 0.18 25)`
 
-Blue carries primary actions and the fallback opening atmosphere. Vermilion is limited to the seal, spark, and tiny moments of surprise.
+Blue carries primary actions and the fallback opening atmosphere. Vermilion is limited to the envelope seal and functional moments of surprise.
 The personalized name is the dominant opening element. Its solid light or dark treatment follows the detected brightness of the selected photo.
 
 ## Typography

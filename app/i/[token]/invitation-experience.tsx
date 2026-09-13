@@ -133,10 +133,7 @@ export function InvitationExperience({
           aria-hidden="true"
         />
       ) : null}
-      <div className="sky-field" aria-hidden="true">
-        <span className="sky-spark">✦</span>
-        <span className="sky-arc" />
-      </div>
+      <div className="sky-field" aria-hidden="true" />
 
       {phase === "intro" || phase === "ready" ? (
         <section className="invite-intro" aria-labelledby="invite-greeting">
@@ -170,7 +167,6 @@ export function InvitationExperience({
       {phase === "letter" ? (
         <section className="letter-screen" aria-labelledby="letter-question">
           {showFold ? <span className="letter-fold" aria-hidden="true" /> : null}
-          <span className="letter-spark" aria-hidden="true">✦</span>
           <div className="letter-content">
             <p className="letter-to">Per {name}</p>
             <h1 id="letter-question">Questa settimana usciamo?</h1>
@@ -229,7 +225,6 @@ export function InvitationExperience({
       {phase === "answered" ? (
         <section className="answer-screen" aria-labelledby="answer-title">
           <div className="answer-content">
-            <span className="answer-spark" aria-hidden="true">✦</span>
             <p>Risposta ricevuta</p>
             <h1 id="answer-title">Lo sapevo.</h1>
             <span className="answer-note">Ci vediamo questa settimana.</span>
