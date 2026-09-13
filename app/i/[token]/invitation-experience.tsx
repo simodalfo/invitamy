@@ -4,18 +4,42 @@ import { PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "
 
 type Phase = "intro" | "ready" | "letter" | "answered";
 type TrickChoice = "no" | "maybe";
+type Choice = "yes" | TrickChoice;
+
+const choiceCopy: Record<Choice, string> = {
+  yes: "Sì",
+  no: "No",
+  maybe: "Non so",
+};
+
+function CheckIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20">
+      <path d="m4.5 10.4 3.4 3.4 7.6-8" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20">
+      <path d="m5 5 10 10M15 5 5 15" />
+    </svg>
+  );
+}
 
 export function InvitationExperience({ token, name }: { token: string; name: string }) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [showFold, setShowFold] = useState(false);
-  const [converted, setConverted] = useState<Record<TrickChoice, boolean>>({ no: false, maybe: false });
+  const [nearbyChoice, setNearbyChoice] = useState<TrickChoice | null>(null);
+  const [confirmingChoice, setConfirmingChoice] = useState<Choice | null>(null);
   const [responseError, setResponseError] = useState("");
   const noRef = useRef<HTMLButtonElement>(null);
   const maybeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const timer = window.setTimeout(() => setPhase("ready"), reducedMotion ? 0 : 2100);
+    const timer = window.setTimeout(() => setPhase("ready"), reducedMotion ? 0 : 1450);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -26,34 +50,52 @@ export function InvitationExperience({ token, name }: { token: string; name: str
     void fetch(`/api/invites/${token}/open`, { method: "POST" });
   }
 
-  function convert(choice: TrickChoice) {
-    setConverted((current) => (current[choice] ? current : { ...current, [choice]: true }));
+  function isTricked(choice: TrickChoice) {
+    return nearbyChoice === choice || confirmingChoice === choice;
+  }
+
+  function getChoiceLabel(choice: Choice) {
+    if (choice !== "yes" && isTricked(choice)) return "Sì, certo";
+    return choiceCopy[choice];
   }
 
   function handleProximity(event: ReactPointerEvent<HTMLElement>) {
-    if (event.pointerType === "touch") return;
+    if (event.pointerType === "touch" || confirmingChoice) return;
 
     const targets: Array<[TrickChoice, HTMLButtonElement | null]> = [
       ["no", noRef.current],
       ["maybe", maybeRef.current],
     ];
 
+    let closestChoice: TrickChoice | null = null;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
     for (const [choice, element] of targets) {
-      if (!element || converted[choice]) continue;
+      if (!element) continue;
       const bounds = element.getBoundingClientRect();
       const centerX = bounds.left + bounds.width / 2;
       const centerY = bounds.top + bounds.height / 2;
       const distance = Math.hypot(event.clientX - centerX, event.clientY - centerY);
-      if (distance < 92) convert(choice);
+      if (distance < closestDistance) {
+        closestChoice = choice;
+        closestDistance = distance;
+      }
     }
+
+    setNearbyChoice(closestDistance < 104 ? closestChoice : null);
   }
 
-  async function choose(choice: "yes" | TrickChoice) {
-    if (choice !== "yes" && !converted[choice]) {
-      convert(choice);
+  function choose(choice: Choice) {
+    if (confirmingChoice !== choice) {
+      setConfirmingChoice(choice);
+      setNearbyChoice(null);
       return;
     }
 
+    void submitChoice();
+  }
+
+  async function submitChoice() {
     setPhase("answered");
     setResponseError("");
 
@@ -79,8 +121,11 @@ export function InvitationExperience({ token, name }: { token: string; name: str
       {phase === "intro" || phase === "ready" ? (
         <section className="invite-intro" aria-labelledby="invite-greeting">
           <div className="greeting-block">
-            <h1 id="invite-greeting">Ciao,<br />{name}.</h1>
-            <p>C’è un messaggio per te.</p>
+            <h1 id="invite-greeting">
+              <span className="greeting-hello">Ciao,</span>
+              <span className="greeting-name">{name}.</span>
+            </h1>
+            <p className="greeting-message">C’è un messaggio per te.</p>
           </div>
 
           <button
@@ -109,33 +154,59 @@ export function InvitationExperience({ token, name }: { token: string; name: str
           <div className="letter-content">
             <p className="letter-to">Per {name}</p>
             <h1 id="letter-question">Questa settimana usciamo?</h1>
-            <div className="choice-group" aria-label="Scegli una risposta">
-              <button className="choice choice-primary" type="button" onClick={() => choose("yes")}>Sì</button>
-              <button
-                ref={noRef}
-                className={`choice choice-trick${converted.no ? " is-converted" : ""}`}
-                type="button"
-                onPointerEnter={() => convert("no")}
-                onPointerDown={(event) => event.pointerType === "touch" && convert("no")}
-                onFocus={() => convert("no")}
-                onClick={() => choose("no")}
-              >
-                {converted.no ? "Sì, certo" : "No"}
-              </button>
-              <button
-                ref={maybeRef}
-                className={`choice choice-trick${converted.maybe ? " is-converted" : ""}`}
-                type="button"
-                onPointerEnter={() => convert("maybe")}
-                onPointerDown={(event) => event.pointerType === "touch" && convert("maybe")}
-                onFocus={() => convert("maybe")}
-                onClick={() => choose("maybe")}
-              >
-                {converted.maybe ? "Sì, certo" : "Non so"}
-              </button>
+            <div
+              className="choice-group"
+              aria-label="Scegli una risposta"
+            >
+              {(["yes", "no", "maybe"] as const).map((choice) => {
+                const isTrickChoice = choice !== "yes";
+                const isConverted = isTrickChoice && isTricked(choice);
+                const isConfirming = confirmingChoice === choice;
+
+                return (
+                  <div className={`choice-row${isConfirming ? " is-confirming" : ""}`} key={choice}>
+                    <button
+                      ref={choice === "no" ? noRef : choice === "maybe" ? maybeRef : undefined}
+                      className={`choice${choice === "yes" ? " choice-primary" : " choice-trick"}${isConverted ? " is-converted" : ""}${isConfirming ? " is-confirming" : ""}`}
+                      type="button"
+                      onFocus={() => isTrickChoice && setNearbyChoice(choice)}
+                      onBlur={() => isTrickChoice && !isConfirming && setNearbyChoice(null)}
+                      onClick={() => choose(choice)}
+                      aria-label={isConfirming ? `Conferma: ${getChoiceLabel(choice)}` : getChoiceLabel(choice)}
+                    >
+                      <span className="choice-copy" key={isConfirming ? "confirm" : getChoiceLabel(choice)}>
+                        {isConfirming ? <CheckIcon /> : null}
+                        {isConfirming ? "Conferma" : getChoiceLabel(choice)}
+                      </span>
+                    </button>
+                    <button
+                      className={`choice-cancel${isConfirming ? " is-visible" : ""}`}
+                      type="button"
+                      onClick={() => {
+                        setConfirmingChoice(null);
+                        setNearbyChoice(null);
+                      }}
+                      disabled={!isConfirming}
+                      tabIndex={isConfirming ? 0 : -1}
+                      aria-hidden={!isConfirming}
+                      aria-label="Annulla la scelta"
+                    >
+                      <CloseIcon />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
             <p className="trick-hint" aria-live="polite">
-              {converted.no || converted.maybe ? "Ops. Sembra che il sito abbia già deciso." : "Scegli liberamente. Più o meno."}
+              {confirmingChoice ? (
+                <>
+                  Confermi la tua scelta? <strong>{getChoiceLabel(confirmingChoice)}</strong>
+                </>
+              ) : nearbyChoice ? (
+                "Ops. Sembra che il sito abbia già deciso."
+              ) : (
+                "Scegli liberamente. Più o meno."
+              )}
             </p>
           </div>
         </section>

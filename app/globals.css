@@ -487,8 +487,7 @@ button:disabled {
 .greeting-block {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
-  animation: greeting-in 760ms var(--ease-out-expo) both;
+  gap: var(--space-lg);
 }
 
 .greeting-block h1,
@@ -497,20 +496,56 @@ button:disabled {
 }
 
 .greeting-block h1 {
-  max-width: 9ch;
+  display: flex;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
   font-family: var(--font-display);
-  font-size: var(--text-display);
   font-weight: 400;
-  line-height: 0.91;
-  letter-spacing: -0.035em;
   text-wrap: balance;
 }
 
-.greeting-block p {
+.greeting-hello {
+  color: var(--color-ink);
+  font-size: var(--text-heading);
+  line-height: 1;
+  letter-spacing: -0.025em;
+  animation: landing-reveal 680ms 40ms var(--ease-out-expo) both;
+}
+
+.greeting-name {
+  position: relative;
+  z-index: var(--z-content);
+  display: block;
+  max-width: calc(100vw - var(--space-2xl));
+  color: var(--color-blue-dark);
+  font-size: clamp(4rem, 20vw, 6rem);
+  line-height: 0.86;
+  letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
+  animation: landing-reveal 760ms 180ms var(--ease-out-expo) both;
+}
+
+.greeting-name::after {
+  position: absolute;
+  z-index: -1;
+  right: -0.05em;
+  bottom: -0.08em;
+  left: -0.05em;
+  height: 0.14em;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-blue), var(--color-secret));
+  content: "";
+  opacity: 0.78;
+  transform-origin: left center;
+  animation: name-accent-in 720ms 620ms var(--ease-out-expo) both;
+}
+
+.greeting-message {
   max-width: 18ch;
   font-size: var(--text-lead);
   line-height: 1.25;
-  animation: message-in 620ms 700ms var(--ease-out-expo) both;
+  animation: landing-reveal 680ms 420ms var(--ease-out-expo) both;
 }
 
 .envelope-trigger {
@@ -528,8 +563,9 @@ button:disabled {
 }
 
 .phase-intro .envelope-trigger {
-  opacity: 0.36;
-  transform: translateY(1.5rem) scale(0.94);
+  opacity: 1;
+  transform: none;
+  cursor: default;
 }
 
 .phase-ready .envelope-trigger {
@@ -543,6 +579,7 @@ button:disabled {
   width: min(78vw, 21rem);
   aspect-ratio: 1.38;
   transition: transform 220ms var(--ease-out-quart);
+  animation: landing-reveal 760ms 680ms var(--ease-out-expo) both;
 }
 
 .envelope-trigger:active:not(:disabled) .envelope {
@@ -615,6 +652,7 @@ button:disabled {
   color: var(--color-ink);
   font-size: var(--text-small);
   font-weight: 650;
+  animation: landing-reveal 620ms 920ms var(--ease-out-expo) both;
 }
 
 .letter-screen,
@@ -673,6 +711,7 @@ button:disabled {
   margin: 0;
   color: var(--color-muted);
   font-size: var(--text-small);
+  animation: landing-reveal 560ms 420ms var(--ease-out-expo) both;
 }
 
 .letter-content h1 {
@@ -684,6 +723,7 @@ button:disabled {
   line-height: 0.98;
   letter-spacing: -0.035em;
   text-wrap: balance;
+  animation: landing-reveal 620ms 560ms var(--ease-out-expo) both;
 }
 
 .choice-group {
@@ -692,7 +732,25 @@ button:disabled {
   gap: var(--space-sm);
 }
 
+.choice-row {
+  position: relative;
+  animation: landing-reveal 600ms 760ms var(--ease-out-expo) both;
+}
+
+.choice-row.is-confirming {
+  padding-right: 3.75rem;
+}
+
+.choice-row:nth-child(2) {
+  animation-delay: 860ms;
+}
+
+.choice-row:nth-child(3) {
+  animation-delay: 960ms;
+}
+
 .choice {
+  width: 100%;
   min-height: 3.25rem;
   border: 0;
   border-radius: 999px;
@@ -701,7 +759,7 @@ button:disabled {
   color: var(--color-ink);
   font-weight: 650;
   cursor: pointer;
-  transition: transform 120ms var(--ease-out-quart), background-color 180ms ease, color 180ms ease;
+  transition: transform 120ms var(--ease-out-quart), background-color 220ms ease, color 220ms ease;
 }
 
 .choice-primary,
@@ -714,6 +772,60 @@ button:disabled {
   animation: choice-switch 240ms var(--ease-out-quart);
 }
 
+.choice.is-confirming {
+  background: var(--color-blue-dark);
+  color: var(--color-white);
+}
+
+.choice-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  animation: choice-copy-in 180ms var(--ease-out-quart) both;
+}
+
+.choice-copy svg,
+.choice-cancel svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.choice-cancel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  width: 3.25rem;
+  min-height: 3.25rem;
+  place-items: center;
+  border: 0.0625rem solid var(--color-line);
+  border-radius: 50%;
+  background: var(--color-white);
+  color: var(--color-ink);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-0.5rem) scale(0.82);
+  transition: opacity 220ms ease, transform 260ms var(--ease-out-expo), border-color 180ms ease;
+}
+
+.choice-cancel.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0) scale(1);
+}
+
+.choice-cancel:disabled {
+  border-color: transparent;
+  opacity: 0;
+}
+
 .choice:active {
   transform: scale(0.98);
 }
@@ -724,6 +836,13 @@ button:disabled {
   color: var(--color-muted);
   font-size: var(--text-small);
   text-align: center;
+  text-wrap: pretty;
+  animation: landing-reveal 560ms 1080ms var(--ease-out-expo) both;
+}
+
+.trick-hint strong {
+  color: var(--color-blue-dark);
+  font-weight: 700;
 }
 
 .answer-screen {
@@ -809,14 +928,14 @@ button:disabled {
   color: var(--color-muted);
 }
 
-@keyframes greeting-in {
-  from { opacity: 0.55; transform: translateY(1rem); filter: blur(0.25rem); }
+@keyframes landing-reveal {
+  from { opacity: 0.16; transform: translateY(1rem); filter: blur(0.4rem); }
   to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
-@keyframes message-in {
-  from { opacity: 0.65; transform: translateY(0.75rem); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes name-accent-in {
+  from { opacity: 0; transform: scaleX(0.12); }
+  to { opacity: 0.78; transform: scaleX(1); }
 }
 
 @keyframes spark-in {
@@ -834,6 +953,11 @@ button:disabled {
   0% { transform: scale(1); }
   45% { transform: scale(0.96); }
   100% { transform: scale(1); }
+}
+
+@keyframes choice-copy-in {
+  from { opacity: 0; transform: translateY(0.25rem) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes answer-in {
@@ -880,7 +1004,6 @@ button:disabled {
     padding-inline: var(--space-3xl);
   }
 
-  .greeting-block h1,
   .answer-screen h1 {
     font-size: 4.5rem;
   }
@@ -933,7 +1056,12 @@ button:disabled {
   }
 
   .greeting-block h1 {
-    font-size: 3rem;
+    max-width: 48vw;
+  }
+
+  .greeting-name {
+    max-width: 48vw;
+    font-size: 4rem;
   }
 
   .envelope-trigger {

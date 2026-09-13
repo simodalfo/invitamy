@@ -20,6 +20,7 @@ All implementation colors use OKLCH.
 - Error: `oklch(0.50 0.18 25)`
 
 Blue carries primary actions and the opening atmosphere. Vermilion is limited to the seal, spark, and tiny moments of surprise.
+The personalized name is the dominant opening element: solid dark blue for clarity, underlined by a short blue-to-vermilion light trail.
 
 ## Typography
 
@@ -35,6 +36,7 @@ Four-point base scale: 4, 8, 12, 16, 24, 32, 48, 64, 96px. Related controls use 
 ## Components
 
 - Buttons use full-pill geometry, 48–52px touch height, clear focus rings, and restrained press feedback.
+- Guest choices use a two-step confirmation pattern. The first tap reveals the selected answer and a cancel control; the second confirms it.
 - Inputs use 12px corners, persistent labels, 48px minimum height, and inline errors.
 - Panels use 16px corners maximum, either a hairline border or a shallow shadow, never both.
 - The envelope and letter are semantic HTML/CSS shapes with paper texture restricted to those objects.
@@ -44,6 +46,7 @@ Four-point base scale: 4, 8, 12, 16, 24, 32, 48, 64, 96px. Related controls use 
 - Utility feedback: 100–150ms.
 - Product state changes: 180–250ms.
 - Guest reveal: 500–800ms with ease-out-expo.
+- Opening copy, name, message, envelope, and letter choices enter in one capped staggered sequence.
 - The signature animation is the envelope expanding into the letter.
 - `prefers-reduced-motion` removes staged delays and spatial motion.
 
