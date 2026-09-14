@@ -14,7 +14,7 @@ Un solo amministratore usa lo strumento in privato per preparare e condividere i
 
 ## Product Purpose
 
-Creare una piccola esperienza-gioco personale: l'amministratore inserisce un nome, sceglie una foto significativa, genera un link univoco e lo invia. Il destinatario viene accolto per nome dentro quell'immagine, scopre una lettera animata e arriva a una domanda in cui ogni risposta conduce scherzosamente al sì prima di una conferma esplicita.
+Creare una piccola esperienza-gioco personale: l'amministratore inserisce un nome, può scegliere una foto significativa, genera un link univoco e lo invia. Il destinatario viene accolto per nome sulla foto scelta o sullo sfondo azzurro sfumato predefinito, scopre una lettera animata e arriva a una domanda in cui ogni risposta conduce scherzosamente al sì prima di una conferma esplicita.
 
 Il prodotto ha successo quando preparare il link richiede pochi secondi e la rivelazione risulta fluida, sorprendente e divertente.
 

@@ -491,6 +491,11 @@ button:disabled {
   box-shadow: 0 0.125rem 0.25rem oklch(0.25 0.03 250 / 0.12);
 }
 
+.photo-remove {
+  align-self: flex-start;
+  padding-inline: var(--space-sm);
+}
+
 .generated-result {
   display: grid;
   min-height: 13rem;
@@ -1018,6 +1023,10 @@ button:disabled {
 }
 
 .trick-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xxs);
   margin: 0;
   color: var(--guest-muted);
   font-size: var(--text-small);
@@ -1028,7 +1037,9 @@ button:disabled {
 
 .trick-hint strong {
   color: var(--guest-ink);
-  font-weight: 700;
+  font-size: var(--text-lead);
+  font-weight: 750;
+  line-height: 1.1;
 }
 
 .answer-screen {

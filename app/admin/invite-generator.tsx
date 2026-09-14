@@ -120,38 +120,46 @@ export function InviteGenerator() {
     }
   }
 
+  function clearPhoto() {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    previewUrlRef.current = null;
+    setPhoto(null);
+    setInvite(null);
+    setError("");
+  }
+
   async function generateInvite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setCopied(false);
-
-    if (!photo) {
-      setError("Scegli la foto che renderà personale questo invito.");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      setLoadingLabel("Salvo la foto…");
-      const uploadForm = new FormData();
-      const extension = photo.blob.type === "image/jpeg" ? "jpg" : photo.blob.type === "image/png" ? "png" : "webp";
-      uploadForm.append("file", photo.blob, `sfondo-invito.${extension}`);
+      let backgroundPath: string | undefined;
 
-      const uploadResponse = await fetch("/api/backgrounds", {
-        method: "POST",
-        body: uploadForm,
-      });
-      const uploadResult = (await uploadResponse.json()) as { pathname?: string; error?: string };
+      if (photo) {
+        setLoadingLabel("Salvo la foto…");
+        const uploadForm = new FormData();
+        const extension = photo.blob.type === "image/jpeg" ? "jpg" : photo.blob.type === "image/png" ? "png" : "webp";
+        uploadForm.append("file", photo.blob, `sfondo-invito.${extension}`);
 
-      if (uploadResponse.status === 401) {
-        window.location.assign("/login");
-        return;
-      }
+        const uploadResponse = await fetch("/api/backgrounds", {
+          method: "POST",
+          body: uploadForm,
+        });
+        const uploadResult = (await uploadResponse.json()) as { pathname?: string; error?: string };
 
-      if (!uploadResponse.ok || !uploadResult.pathname) {
-        setError(uploadResult.error ?? "Non siamo riusciti a salvare la foto. Riprova.");
-        return;
+        if (uploadResponse.status === 401) {
+          window.location.assign("/login");
+          return;
+        }
+
+        if (!uploadResponse.ok || !uploadResult.pathname) {
+          setError(uploadResult.error ?? "Non siamo riusciti a salvare la foto. Riprova.");
+          return;
+        }
+
+        backgroundPath = uploadResult.pathname;
       }
 
       setLoadingLabel("Creo il link…");
@@ -160,8 +168,7 @@ export function InviteGenerator() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
-          backgroundPath: uploadResult.pathname,
-          backgroundTone: photo.tone,
+          ...(backgroundPath && photo ? { backgroundPath, backgroundTone: photo.tone } : {}),
         }),
       });
       const result = (await response.json()) as GeneratedInvite & { error?: string };
@@ -224,7 +231,7 @@ export function InviteGenerator() {
         </div>
 
         <div className="field-group">
-          <label htmlFor="invite-photo">Foto di sfondo</label>
+          <label htmlFor="invite-photo">Foto di sfondo · facoltativa</label>
           <input
             className="visually-hidden"
             id="invite-photo"
@@ -249,11 +256,11 @@ export function InviteGenerator() {
               <span className="photo-empty">
                 <span aria-hidden="true">＋</span>
                 <strong>{preparingPhoto ? "Preparo la foto…" : "Scegli una foto"}</strong>
-                <small>Dal telefono o dalla libreria</small>
+                <small>Oppure usa lo sfondo azzurro</small>
               </span>
             )}
           </label>
-          <p className="field-help">Scegli qualcosa che riconoscerà subito come vostro.</p>
+          <p className="field-help">Se la salti, l’invito userà lo sfondo azzurro sfumato.</p>
 
           {photo ? (
             <div className="tone-control" role="group" aria-label="Colore del testo sulla foto">
@@ -276,6 +283,12 @@ export function InviteGenerator() {
               </div>
             </div>
           ) : null}
+
+          {photo ? (
+            <button className="text-button photo-remove" type="button" onClick={clearPhoto}>
+              Usa lo sfondo predefinito
+            </button>
+          ) : null}
         </div>
 
         {error ? <p className="field-error" id="generator-error" role="alert">{error}</p> : null}
@@ -283,7 +296,7 @@ export function InviteGenerator() {
         <button
           className="button button-primary"
           type="submit"
-          disabled={loading || preparingPhoto || !name.trim() || !photo}
+          disabled={loading || preparingPhoto || !name.trim()}
         >
           {loading ? loadingLabel : "Genera link"}
         </button>

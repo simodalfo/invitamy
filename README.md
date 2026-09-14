@@ -1,6 +1,6 @@
 # Invitamy
 
-Un invito personale che si comporta come un piccolo gioco. L'area privata consente a un solo amministratore di inserire un nome, scegliere una foto e generare un link univoco; il destinatario apre una busta animata e scopre la domanda sullo sfondo preparato per lui.
+Un invito personale che si comporta come un piccolo gioco. L'area privata consente a un solo amministratore di inserire un nome, aggiungere facoltativamente una foto e generare un link univoco; il destinatario apre una busta animata e scopre la domanda sulla foto scelta o sullo sfondo azzurro sfumato predefinito.
 
 ## Avvio locale
 

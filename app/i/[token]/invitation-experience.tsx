@@ -68,7 +68,7 @@ export function InvitationExperience({
   }
 
   function getChoiceLabel(choice: Choice) {
-    if (choice !== "yes" && isTricked(choice)) return "Sì, certo";
+    if (choice !== "yes" && isTricked(choice)) return "Sì, certo!";
     return choiceCopy[choice];
   }
 
@@ -142,7 +142,7 @@ export function InvitationExperience({
               <span className="greeting-hello">Ciao,</span>
               <span className="greeting-name">{name}.</span>
             </h1>
-            <p className="greeting-message">C’è un messaggio per te.</p>
+            <p className="greeting-message">C’è un messaggio per te!</p>
           </div>
 
           <button
@@ -215,7 +215,8 @@ export function InvitationExperience({
             </div>
             {confirmingChoice ? (
               <p className="trick-hint" aria-live="polite">
-                Confermi la tua scelta? <strong>{getChoiceLabel(confirmingChoice)}</strong>
+                <span>Confermi la tua scelta!</span>
+                <strong>{getChoiceLabel(confirmingChoice)}</strong>
               </p>
             ) : null}
           </div>
