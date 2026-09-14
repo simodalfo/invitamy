@@ -18,14 +18,14 @@ import {
 
 type Phase = "intro" | "ready" | "letter" | "answered";
 type LetterStep = "choice" | "schedule";
-type TrickChoice = "no" | "maybe";
-type Choice = "yes" | TrickChoice;
+type TrickChoice = "no";
+type Choice = "yes" | "no" | "maybe";
 type SubmissionStatus = "idle" | "sending" | "success" | "error";
 
 const choiceCopy: Record<Choice, string> = {
   yes: "Sì",
   no: "No",
-  maybe: "Non so",
+  maybe: "Sì, ovvio",
 };
 
 const confettiColors = [
@@ -108,7 +108,6 @@ export function InvitationExperience({
   const [submissionStatus, setSubmissionStatus] = useState<SubmissionStatus>("idle");
   const [responseError, setResponseError] = useState("");
   const noRef = useRef<HTMLButtonElement>(null);
-  const maybeRef = useRef<HTMLButtonElement>(null);
   const ignoredTouchClickRef = useRef<TrickChoice | null>(null);
   const hasPhoto = Boolean(backgroundPath && backgroundTone);
   const backgroundUrl = hasPhoto ? `/api/invites/${token}/background` : undefined;
@@ -133,17 +132,14 @@ export function InvitationExperience({
   }
 
   function getChoiceLabel(choice: Choice) {
-    if (choice !== "yes" && isTricked(choice)) return "Sì, certo!";
+    if (choice === "no" && isTricked(choice)) return "Sì, certo!";
     return choiceCopy[choice];
   }
 
   function handleProximity(event: ReactPointerEvent<HTMLElement>) {
     if (event.pointerType === "touch" || confirmingChoice) return;
 
-    const targets: Array<[TrickChoice, HTMLButtonElement | null]> = [
-      ["no", noRef.current],
-      ["maybe", maybeRef.current],
-    ];
+    const targets: Array<[TrickChoice, HTMLButtonElement | null]> = [["no", noRef.current]];
 
     let closestChoice: TrickChoice | null = null;
     let closestDistance = Number.POSITIVE_INFINITY;
@@ -164,7 +160,7 @@ export function InvitationExperience({
   }
 
   function choose(choice: Choice) {
-    if (choice !== "yes" && !isTricked(choice)) {
+    if (choice === "no" && !isTricked(choice)) {
       setRevealedChoice(choice);
       setNearbyChoice(null);
       return;
@@ -173,7 +169,7 @@ export function InvitationExperience({
     if (confirmingChoice !== choice) {
       setConfirmingChoice(choice);
       setNearbyChoice(null);
-      setRevealedChoice(choice === "yes" ? null : choice);
+      setRevealedChoice(choice === "no" ? choice : null);
       return;
     }
 
@@ -190,7 +186,7 @@ export function InvitationExperience({
   }
 
   function prepareTouchChoice(event: ReactPointerEvent<HTMLButtonElement>, choice: Choice) {
-    if (event.pointerType !== "touch" || choice === "yes" || isTricked(choice)) return;
+    if (event.pointerType !== "touch" || choice !== "no" || isTricked(choice)) return;
 
     ignoredTouchClickRef.current = choice;
     setRevealedChoice(choice);
@@ -198,7 +194,7 @@ export function InvitationExperience({
   }
 
   function handleChoiceClick(choice: Choice) {
-    if (choice !== "yes" && ignoredTouchClickRef.current === choice) {
+    if (choice === "no" && ignoredTouchClickRef.current === choice) {
       ignoredTouchClickRef.current = null;
       return;
     }
@@ -293,15 +289,15 @@ export function InvitationExperience({
                 <p className="acceptance-hint">Doppio click per confermare ;)</p>
                 <div className="choice-group" aria-label="Scegli una risposta">
                   {(["yes", "no", "maybe"] as const).map((choice) => {
-                    const isTrickChoice = choice !== "yes";
-                    const isConverted = isTrickChoice && isTricked(choice);
+                    const isTrickChoice = choice === "no";
+                    const isConverted = choice === "no" && isTricked(choice);
                     const isConfirming = confirmingChoice === choice;
 
                     return (
                       <div className={`choice-row${isConfirming ? " is-confirming" : ""}`} key={choice}>
                         <button
-                          ref={choice === "no" ? noRef : choice === "maybe" ? maybeRef : undefined}
-                          className={`choice${choice === "yes" ? " choice-primary" : " choice-trick"}${isConverted ? " is-converted" : ""}${isConfirming ? " is-confirming choice-confirm" : ""}`}
+                          ref={choice === "no" ? noRef : undefined}
+                          className={`choice${choice === "no" ? " choice-trick" : " choice-primary"}${isConverted ? " is-converted" : ""}${isConfirming ? " is-confirming choice-confirm" : ""}`}
                           type="button"
                           data-choice={choice}
                           onPointerDown={(event) => prepareTouchChoice(event, choice)}
