@@ -2,7 +2,7 @@ export const MAX_INVITE_RANGE_DAYS = 7;
 
 export type InviteSchedule =
   | { mode: "single"; date: string }
-  | { mode: "range"; startDate: string; endDate: string };
+  | { mode: "range"; startDate: string; endDate: string; recommendedDates?: string[] };
 
 const isoDatePattern = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -40,6 +40,7 @@ export function normalizeInviteSchedule(value: unknown): InviteSchedule | undefi
     date?: unknown;
     startDate?: unknown;
     endDate?: unknown;
+    recommendedDates?: unknown;
   };
 
   if (schedule.mode === "single") {
@@ -59,7 +60,20 @@ export function normalizeInviteSchedule(value: unknown): InviteSchedule | undefi
     const inclusiveDays = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
     if (inclusiveDays > MAX_INVITE_RANGE_DAYS) return undefined;
 
-    return { mode: "range", startDate, endDate };
+    const recommendedDates = Array.isArray(schedule.recommendedDates)
+      ? Array.from(new Set(
+          schedule.recommendedDates
+            .map(normalizeInviteDate)
+            .filter((date) => date >= startDate && date <= endDate),
+        )).sort()
+      : [];
+
+    return {
+      mode: "range",
+      startDate,
+      endDate,
+      ...(recommendedDates.length ? { recommendedDates } : {}),
+    };
   }
 
   return undefined;

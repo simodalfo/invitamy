@@ -36,10 +36,11 @@ Four-point base scale: 4, 8, 12, 16, 24, 32, 48, 64, 96px. Related controls use 
 ## Components
 
 - Buttons use full-pill geometry, 48–52px touch height, clear focus rings, and restrained press feedback.
-- Every invite starts with the same three playful response buttons. Only after that answer is confirmed does the exact-day confirmation or range picker appear.
+- Every invite starts with the same three playful response buttons. “No” and “Non so” reveal their affirmative alternatives on proximity or first touch; only after an answer is confirmed does the exact-day confirmation or range picker appear.
 - Inputs use 12px corners, persistent labels, 48px minimum height, and inline errors.
 - The photo picker compresses locally, previews the final contrast treatment, and allows a manual light/dark override.
 - Scheduling uses a familiar two-option segmented control: one exact day or a range of up to seven days.
+- A ranged invitation can mark one or more preferred days; guests see them as clearly labelled green translucent choices.
 - Date choices are compact two-column controls on the guest letter, followed by an explicit confirmation state.
 - After the day is confirmed, the guest gets one final optional message field before sending the response.
 - Confirmation uses the product success green; a successful response triggers one short, non-interactive confetti shower.

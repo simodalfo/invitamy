@@ -19,14 +19,14 @@ import { MAX_RESPONSE_MESSAGE_LENGTH } from "@/lib/invite-message";
 
 type Phase = "intro" | "ready" | "letter" | "answered";
 type LetterStep = "choice" | "schedule" | "message";
-type TrickChoice = "no";
-type Choice = "yes" | "no" | "maybe";
+type TrickChoice = "no" | "maybe";
+type Choice = "yes" | TrickChoice;
 type SubmissionStatus = "idle" | "sending" | "success" | "error";
 
 const choiceCopy: Record<Choice, string> = {
   yes: "Sì",
   no: "No",
-  maybe: "Sì, ovvio",
+  maybe: "Non so",
 };
 
 const confettiColors = [
@@ -110,6 +110,7 @@ export function InvitationExperience({
   const [submissionStatus, setSubmissionStatus] = useState<SubmissionStatus>("idle");
   const [responseError, setResponseError] = useState("");
   const noRef = useRef<HTMLButtonElement>(null);
+  const maybeRef = useRef<HTMLButtonElement>(null);
   const ignoredTouchClickRef = useRef<TrickChoice | null>(null);
   const hasPhoto = Boolean(backgroundPath && backgroundTone);
   const backgroundUrl = hasPhoto ? `/api/invites/${token}/background` : undefined;
@@ -134,14 +135,19 @@ export function InvitationExperience({
   }
 
   function getChoiceLabel(choice: Choice) {
-    if (choice === "no" && isTricked(choice)) return "Sì, certo!";
+    if (choice !== "yes" && isTricked(choice)) {
+      return choice === "no" ? "Sì, certo!" : "Sì, ovvio";
+    }
     return choiceCopy[choice];
   }
 
   function handleProximity(event: ReactPointerEvent<HTMLElement>) {
     if (event.pointerType === "touch" || confirmingChoice) return;
 
-    const targets: Array<[TrickChoice, HTMLButtonElement | null]> = [["no", noRef.current]];
+    const targets: Array<[TrickChoice, HTMLButtonElement | null]> = [
+      ["no", noRef.current],
+      ["maybe", maybeRef.current],
+    ];
 
     let closestChoice: TrickChoice | null = null;
     let closestDistance = Number.POSITIVE_INFINITY;
@@ -162,7 +168,7 @@ export function InvitationExperience({
   }
 
   function choose(choice: Choice) {
-    if (choice === "no" && !isTricked(choice)) {
+    if (choice !== "yes" && !isTricked(choice)) {
       setRevealedChoice(choice);
       setNearbyChoice(null);
       return;
@@ -171,7 +177,7 @@ export function InvitationExperience({
     if (confirmingChoice !== choice) {
       setConfirmingChoice(choice);
       setNearbyChoice(null);
-      setRevealedChoice(choice === "no" ? choice : null);
+      setRevealedChoice(choice === "yes" ? null : choice);
       return;
     }
 
@@ -188,7 +194,7 @@ export function InvitationExperience({
   }
 
   function prepareTouchChoice(event: ReactPointerEvent<HTMLButtonElement>, choice: Choice) {
-    if (event.pointerType !== "touch" || choice !== "no" || isTricked(choice)) return;
+    if (event.pointerType !== "touch" || choice === "yes" || isTricked(choice)) return;
 
     ignoredTouchClickRef.current = choice;
     setRevealedChoice(choice);
@@ -196,7 +202,7 @@ export function InvitationExperience({
   }
 
   function handleChoiceClick(choice: Choice) {
-    if (choice === "no" && ignoredTouchClickRef.current === choice) {
+    if (choice !== "yes" && ignoredTouchClickRef.current === choice) {
       ignoredTouchClickRef.current = null;
       return;
     }
@@ -303,15 +309,15 @@ export function InvitationExperience({
                 <p className="acceptance-hint">Doppio click per confermare ;)</p>
                 <div className="choice-group" aria-label="Scegli una risposta">
                   {(["yes", "no", "maybe"] as const).map((choice) => {
-                    const isTrickChoice = choice === "no";
-                    const isConverted = choice === "no" && isTricked(choice);
+                    const isTrickChoice = choice !== "yes";
+                    const isConverted = isTrickChoice && isTricked(choice);
                     const isConfirming = confirmingChoice === choice;
 
                     return (
                       <div className={`choice-row${isConfirming ? " is-confirming" : ""}`} key={choice}>
                         <button
-                          ref={choice === "no" ? noRef : undefined}
-                          className={`choice${choice === "no" ? " choice-trick" : " choice-primary"}${isConverted ? " is-converted" : ""}${isConfirming ? " is-confirming choice-confirm" : ""}`}
+                          ref={choice === "no" ? noRef : choice === "maybe" ? maybeRef : undefined}
+                          className={`choice${choice === "yes" ? " choice-primary" : " choice-trick"}${isConverted ? " is-converted" : ""}${isConfirming ? " is-confirming choice-confirm" : ""}`}
                           type="button"
                           data-choice={choice}
                           onPointerDown={(event) => prepareTouchChoice(event, choice)}
@@ -371,17 +377,20 @@ export function InvitationExperience({
                     <div className="date-choice-grid" aria-label="Scegli il giorno">
                       {dateOptions.map((date) => {
                         const isSelected = selectedDate === date;
+                        const isRecommended = schedule.recommendedDates?.includes(date) ?? false;
                         return (
                           <button
-                            className={`date-choice${isSelected ? " is-selected" : ""}`}
+                            className={`date-choice${isRecommended ? " is-recommended" : ""}${isSelected ? " is-selected" : ""}`}
                             type="button"
                             data-date={date}
                             aria-pressed={isSelected}
+                            aria-label={`${formatInviteDate(date)}${isRecommended ? ", consigliato" : ""}`}
                             onClick={() => chooseDate(date)}
                             key={date}
                           >
                             <span>{formatInviteWeekday(date)}</span>
                             <strong>{formatInviteDayMonth(date)}</strong>
+                            {isRecommended ? <small>Consigliato</small> : null}
                           </button>
                         );
                       })}

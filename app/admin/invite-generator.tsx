@@ -2,6 +2,10 @@
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import {
+  formatInviteDate,
+  formatInviteDayMonth,
+  formatInviteWeekday,
+  inviteScheduleDates,
   MAX_INVITE_RANGE_DAYS,
   type InviteSchedule,
   normalizeInviteSchedule,
@@ -102,6 +106,7 @@ export function InviteGenerator() {
   const [singleDate, setSingleDate] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [recommendedDates, setRecommendedDates] = useState<string[]>([]);
   const [minimumDate, setMinimumDate] = useState("");
   const [photo, setPhoto] = useState<PreparedPhoto | null>(null);
   const [invite, setInvite] = useState<GeneratedInvite | null>(null);
@@ -114,6 +119,8 @@ export function InviteGenerator() {
   const previewUrlRef = useRef<string | null>(null);
   const earliestRangeEnd = shiftDate(startDate, 1) || minimumDate;
   const latestRangeEnd = shiftDate(startDate, MAX_INVITE_RANGE_DAYS - 1) || undefined;
+  const normalizedRange = normalizeInviteSchedule({ mode: "range", startDate, endDate });
+  const rangeDateOptions = normalizedRange?.mode === "range" ? inviteScheduleDates(normalizedRange) : [];
 
   useEffect(() => {
     setCanShare(typeof navigator.share === "function");
@@ -156,6 +163,17 @@ export function InviteGenerator() {
 
   function changeScheduleMode(mode: ScheduleMode) {
     setScheduleMode(mode);
+    if (mode === "single") setRecommendedDates([]);
+    setInvite(null);
+    setError("");
+  }
+
+  function toggleRecommendedDate(date: string) {
+    setRecommendedDates((current) => (
+      current.includes(date)
+        ? current.filter((currentDate) => currentDate !== date)
+        : [...current, date].sort()
+    ));
     setInvite(null);
     setError("");
   }
@@ -168,7 +186,7 @@ export function InviteGenerator() {
     const schedule = normalizeInviteSchedule(
       scheduleMode === "single"
         ? { mode: "single", date: singleDate }
-        : { mode: "range", startDate, endDate },
+        : { mode: "range", startDate, endDate, recommendedDates },
     );
 
     if (!schedule) {
@@ -360,6 +378,7 @@ export function InviteGenerator() {
                     ) {
                       setEndDate("");
                     }
+                    setRecommendedDates([]);
                     setInvite(null);
                     setError("");
                   }}
@@ -376,7 +395,11 @@ export function InviteGenerator() {
                   max={latestRangeEnd}
                   value={endDate}
                   onChange={(event) => {
-                    setEndDate(event.target.value);
+                    const nextEndDate = event.target.value;
+                    setEndDate(nextEndDate);
+                    setRecommendedDates((current) => current.filter(
+                      (date) => date >= startDate && date <= nextEndDate,
+                    ));
                     setInvite(null);
                     setError("");
                   }}
@@ -384,6 +407,33 @@ export function InviteGenerator() {
                 />
               </div>
               <p className="field-help">Fino a {MAX_INVITE_RANGE_DAYS} giorni tra cui scegliere.</p>
+              {rangeDateOptions.length ? (
+                <div className="recommended-picker">
+                  <div className="recommended-picker-copy">
+                    <strong>Giorni consigliati · facoltativo</strong>
+                    <span id="recommended-days-help">Tocca quelli che preferisci.</span>
+                  </div>
+                  <div className="recommended-days-grid" role="group" aria-describedby="recommended-days-help">
+                    {rangeDateOptions.map((date) => {
+                      const isRecommended = recommendedDates.includes(date);
+
+                      return (
+                        <button
+                          type="button"
+                          aria-label={`${formatInviteDate(date)}${isRecommended ? ", consigliato" : ""}`}
+                          aria-pressed={isRecommended}
+                          onClick={() => toggleRecommendedDate(date)}
+                          key={date}
+                        >
+                          <span>{formatInviteWeekday(date)}</span>
+                          <strong>{formatInviteDayMonth(date)}</strong>
+                          {isRecommended ? <small>Consigliato</small> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
         </fieldset>

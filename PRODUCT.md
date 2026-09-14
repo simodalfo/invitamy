@@ -34,7 +34,7 @@ Evitare interfacce affollate, dashboard aziendali, estetica da cartolina romanti
 
 - Una sola azione evidente per momento.
 - Ogni invito deve contenere almeno una scelta riconoscibile come specifica di quella persona.
-- La disponibilità resta breve: un giorno preciso o al massimo sette giorni tra cui scegliere.
+- La disponibilità resta breve: un giorno preciso o al massimo sette giorni tra cui scegliere, con la possibilità di evidenziare quelli consigliati.
 - La sorpresa cresce per passaggi brevi, mai tramite spiegazioni.
 - Il gioco deve funzionare altrettanto bene con dito, mouse e tastiera.
 - L'area amministrativa resta discreta; l'invito riceve tutta la personalità.
