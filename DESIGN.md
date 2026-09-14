@@ -6,7 +6,7 @@ An ultra-minimal mobile web product that moves from clear blue-hour atmosphere t
 
 ## Color
 
-All implementation colors use OKLCH.
+Implementation colors use OKLCH, except for the explicitly specified iOS confirmation green.
 
 - Background: `oklch(1 0 0)`
 - Surface: `oklch(0.965 0.012 250)`
@@ -16,7 +16,7 @@ All implementation colors use OKLCH.
 - Blue: `oklch(0.60 0.16 253)`
 - Blue dark: `oklch(0.48 0.18 253)`
 - Secret vermilion: `oklch(0.58 0.20 23)`
-- Success: `oklch(0.48 0.12 155)`
+- Success confirmation: `#4CCB61`
 - Error: `oklch(0.50 0.18 25)`
 
 Blue carries primary actions and the fallback opening atmosphere. Vermilion is limited to the envelope seal and functional moments of surprise.
@@ -36,7 +36,7 @@ Four-point base scale: 4, 8, 12, 16, 24, 32, 48, 64, 96px. Related controls use 
 ## Components
 
 - Buttons use full-pill geometry, 48–52px touch height, clear focus rings, and restrained press feedback.
-- Guest choices use a two-step confirmation pattern. The first tap reveals the selected answer and a cancel control; the second confirms it.
+- Every invite starts with the same three playful response buttons. Only after that answer is confirmed does the exact-day confirmation or range picker appear.
 - Inputs use 12px corners, persistent labels, 48px minimum height, and inline errors.
 - The photo picker compresses locally, previews the final contrast treatment, and allows a manual light/dark override.
 - Scheduling uses a familiar two-option segmented control: one exact day or a range of up to seven days.

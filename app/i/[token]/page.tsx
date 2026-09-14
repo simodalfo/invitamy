@@ -1,10 +1,22 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getInvite } from "@/lib/invites";
 import { InvitationExperience } from "./invitation-experience";
 
 export const dynamic = "force-dynamic";
 
-export default async function InvitationPage({ params }: { params: Promise<{ token: string }> }) {
+type InvitationPageProps = { params: Promise<{ token: string }> };
+
+export async function generateMetadata({ params }: InvitationPageProps): Promise<Metadata> {
+  const { token } = await params;
+  const invite = await getInvite(token);
+
+  return {
+    title: invite ? `Messaggio per ${invite.name}` : "Messaggio personale",
+  };
+}
+
+export default async function InvitationPage({ params }: InvitationPageProps) {
   const { token } = await params;
   const invite = await getInvite(token);
   if (!invite) notFound();

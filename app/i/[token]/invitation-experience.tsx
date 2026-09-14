@@ -17,6 +17,7 @@ import {
 } from "@/lib/invite-schedule";
 
 type Phase = "intro" | "ready" | "letter" | "answered";
+type LetterStep = "choice" | "schedule";
 type TrickChoice = "no" | "maybe";
 type Choice = "yes" | TrickChoice;
 type SubmissionStatus = "idle" | "sending" | "success" | "error";
@@ -98,6 +99,7 @@ export function InvitationExperience({
   backgroundTone?: BackgroundTone;
 }) {
   const [phase, setPhase] = useState<Phase>("intro");
+  const [letterStep, setLetterStep] = useState<LetterStep>("choice");
   const [showFold, setShowFold] = useState(false);
   const [nearbyChoice, setNearbyChoice] = useState<TrickChoice | null>(null);
   const [revealedChoice, setRevealedChoice] = useState<TrickChoice | null>(null);
@@ -112,11 +114,6 @@ export function InvitationExperience({
   const backgroundUrl = hasPhoto ? `/api/invites/${token}/background` : undefined;
   const dateOptions = schedule?.mode === "range" ? inviteScheduleDates(schedule) : [];
   const responseDate = schedule?.mode === "single" ? schedule.date : selectedDate ?? undefined;
-  const letterQuestion = schedule?.mode === "single"
-    ? `Usciamo ${formatInviteDate(schedule.date)}?`
-    : schedule?.mode === "range"
-      ? "Quando usciamo?"
-      : "Questa settimana usciamo?";
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -180,6 +177,15 @@ export function InvitationExperience({
       return;
     }
 
+    if (schedule) {
+      setLetterStep("schedule");
+      setConfirmingChoice(null);
+      setNearbyChoice(null);
+      setRevealedChoice(null);
+      ignoredTouchClickRef.current = null;
+      return;
+    }
+
     void submitChoice();
   }
 
@@ -230,7 +236,7 @@ export function InvitationExperience({
     <main
       className={`invite-scene phase-${phase}${hasPhoto ? ` has-photo on-${backgroundTone}` : ""}`}
       id="main-content"
-      onPointerMove={phase === "letter" && schedule?.mode !== "range" ? handleProximity : undefined}
+      onPointerMove={phase === "letter" && letterStep === "choice" ? handleProximity : undefined}
     >
       {backgroundUrl ? (
         <div
@@ -275,50 +281,16 @@ export function InvitationExperience({
 
       {phase === "letter" ? (
         <section
-          className={`letter-screen${schedule ? " is-scheduled" : ""}${schedule?.mode === "range" ? " is-date-picker" : ""}`}
+          className={`letter-screen${letterStep === "schedule" ? " is-scheduled" : ""}${letterStep === "schedule" && schedule?.mode === "range" ? " is-date-picker" : ""}`}
           aria-labelledby="letter-question"
         >
           {showFold ? <span className="letter-fold" aria-hidden="true" /> : null}
-          <div className="letter-content">
-            <p className="letter-to">Per {name}</p>
-            <h1 id="letter-question">{letterQuestion}</h1>
-            <p className="acceptance-hint">Doppio click per confermare ;)</p>
-
-            {schedule?.mode === "range" ? (
-              <div className="date-choice-flow">
-                <div className="date-choice-grid" aria-label="Scegli il giorno">
-                  {dateOptions.map((date) => {
-                    const isSelected = selectedDate === date;
-                    return (
-                      <button
-                        className={`date-choice${isSelected ? " is-selected" : ""}`}
-                        type="button"
-                        data-date={date}
-                        aria-pressed={isSelected}
-                        onClick={() => chooseDate(date)}
-                        key={date}
-                      >
-                        <span>{formatInviteWeekday(date)}</span>
-                        <strong>{formatInviteDayMonth(date)}</strong>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {selectedDate ? (
-                  <div className="date-confirmation" aria-live="polite" key={selectedDate}>
-                    <p>
-                      <span>Confermi questo giorno:</span>
-                      <strong>“{formatInviteDate(selectedDate)}”</strong>
-                    </p>
-                    <button className="choice choice-primary choice-confirm" type="button" onClick={() => void submitChoice()}>
-                      <span className="choice-copy"><CheckIcon /> Conferma</span>
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            ) : (
+          <div className={`letter-content${letterStep === "schedule" ? " schedule-step" : ""}`}>
+            {letterStep === "choice" ? (
               <>
+                <p className="letter-to">Per {name}</p>
+                <h1 id="letter-question">Questa settimana usciamo?</h1>
+                <p className="acceptance-hint">Doppio click per confermare ;)</p>
                 <div className="choice-group" aria-label="Scegli una risposta">
                   {(["yes", "no", "maybe"] as const).map((choice) => {
                     const isTrickChoice = choice !== "yes";
@@ -377,7 +349,59 @@ export function InvitationExperience({
                   </p>
                 ) : null}
               </>
-            )}
+            ) : schedule ? (
+              <>
+                <p className="letter-to">Perfetto, {name}</p>
+                <h1 id="letter-question">
+                  {schedule.mode === "range" ? "Scegli il giorno" : "Ti va questo giorno?"}
+                </h1>
+
+                {schedule.mode === "range" ? (
+                  <div className="date-choice-flow">
+                    <div className="date-choice-grid" aria-label="Scegli il giorno">
+                      {dateOptions.map((date) => {
+                        const isSelected = selectedDate === date;
+                        return (
+                          <button
+                            className={`date-choice${isSelected ? " is-selected" : ""}`}
+                            type="button"
+                            data-date={date}
+                            aria-pressed={isSelected}
+                            onClick={() => chooseDate(date)}
+                            key={date}
+                          >
+                            <span>{formatInviteWeekday(date)}</span>
+                            <strong>{formatInviteDayMonth(date)}</strong>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {selectedDate ? (
+                      <div className="date-confirmation" aria-live="polite" key={selectedDate}>
+                        <p>
+                          <span>Confermi questo giorno:</span>
+                          <strong>“{formatInviteDate(selectedDate)}”</strong>
+                        </p>
+                        <button className="choice choice-primary choice-confirm" type="button" onClick={() => void submitChoice()}>
+                          <span className="choice-copy"><CheckIcon /> Conferma</span>
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="date-confirmation single-date-confirmation">
+                    <p>
+                      <span>Il giorno proposto è:</span>
+                      <strong>“{formatInviteDate(schedule.date)}”</strong>
+                    </p>
+                    <button className="choice choice-primary choice-confirm" type="button" onClick={() => void submitChoice()}>
+                      <span className="choice-copy"><CheckIcon /> Conferma il giorno</span>
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : null}
           </div>
         </section>
       ) : null}
@@ -398,9 +422,7 @@ export function InvitationExperience({
                 ? "Un attimo."
                 : submissionStatus === "error"
                   ? "Quasi."
-                  : schedule?.mode === "range"
-                    ? "Perfetto."
-                    : "Lo sapevo :)"}
+                  : "Lo sapevo :)"}
             </h1>
             <span className="answer-note">
               {submissionStatus === "sending"
