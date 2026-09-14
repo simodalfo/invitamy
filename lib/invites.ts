@@ -1,11 +1,17 @@
 import "server-only";
 
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import {
+  type InviteSchedule,
+  normalizeInviteSchedule,
+  scheduleIncludesDate,
+} from "@/lib/invite-schedule";
 
 export type Invite = {
   token: string;
   name: string;
   createdAt: string;
+  schedule?: InviteSchedule;
   backgroundPath?: string;
   backgroundTone?: BackgroundTone;
 };
@@ -43,7 +49,10 @@ export function normalizeBackgroundTone(value: unknown): BackgroundTone | undefi
 
 export async function createInvite(
   name: string,
-  background?: { path: string; tone: BackgroundTone },
+  options: {
+    background?: { path: string; tone: BackgroundTone };
+    schedule?: InviteSchedule;
+  } = {},
 ): Promise<Invite> {
   const createdAt = new Date().toISOString();
   const iv = randomBytes(IV_LENGTH);
@@ -51,7 +60,10 @@ export async function createInvite(
   const payload = {
     name,
     createdAt,
-    ...(background ? { backgroundPath: background.path, backgroundTone: background.tone } : {}),
+    ...(options.background
+      ? { backgroundPath: options.background.path, backgroundTone: options.background.tone }
+      : {}),
+    ...(options.schedule ? { schedule: options.schedule } : {}),
   };
   const plaintext = Buffer.from(JSON.stringify(payload), "utf8");
   const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
@@ -79,10 +91,12 @@ export async function getInvite(token: string): Promise<Invite | null> {
       createdAt?: unknown;
       backgroundPath?: unknown;
       backgroundTone?: unknown;
+      schedule?: unknown;
     };
     const name = normalizeName(parsed.name);
     const backgroundPath = normalizeBackgroundPath(parsed.backgroundPath);
     const backgroundTone = normalizeBackgroundTone(parsed.backgroundTone);
+    const schedule = normalizeInviteSchedule(parsed.schedule);
 
     if (!name || typeof parsed.createdAt !== "string") return null;
     return {
@@ -90,6 +104,7 @@ export async function getInvite(token: string): Promise<Invite | null> {
       name,
       createdAt: parsed.createdAt,
       ...(backgroundPath && backgroundTone ? { backgroundPath, backgroundTone } : {}),
+      ...(schedule ? { schedule } : {}),
     };
   } catch {
     return null;
@@ -100,6 +115,9 @@ export async function markInviteOpened(token: string) {
   return Boolean(await getInvite(token));
 }
 
-export async function recordYes(token: string) {
-  return Boolean(await getInvite(token));
+export async function recordYes(token: string, selectedDate?: unknown) {
+  const invite = await getInvite(token);
+  if (!invite) return null;
+  if (!invite.schedule) return invite;
+  return scheduleIncludesDate(invite.schedule, selectedDate) ? invite : null;
 }

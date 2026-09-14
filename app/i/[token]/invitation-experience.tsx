@@ -2,10 +2,18 @@
 
 import { PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 import type { BackgroundTone } from "@/lib/invites";
+import {
+  formatInviteDate,
+  formatInviteDayMonth,
+  formatInviteWeekday,
+  inviteScheduleDates,
+  type InviteSchedule,
+} from "@/lib/invite-schedule";
 
 type Phase = "intro" | "ready" | "letter" | "answered";
 type TrickChoice = "no" | "maybe";
 type Choice = "yes" | TrickChoice;
+type SubmissionStatus = "idle" | "sending" | "success" | "error";
 
 const choiceCopy: Record<Choice, string> = {
   yes: "Sì",
@@ -32,23 +40,36 @@ function CloseIcon() {
 export function InvitationExperience({
   token,
   name,
+  schedule,
   backgroundPath,
   backgroundTone,
 }: {
   token: string;
   name: string;
+  schedule?: InviteSchedule;
   backgroundPath?: string;
   backgroundTone?: BackgroundTone;
 }) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [showFold, setShowFold] = useState(false);
   const [nearbyChoice, setNearbyChoice] = useState<TrickChoice | null>(null);
+  const [revealedChoice, setRevealedChoice] = useState<TrickChoice | null>(null);
   const [confirmingChoice, setConfirmingChoice] = useState<Choice | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [submissionStatus, setSubmissionStatus] = useState<SubmissionStatus>("idle");
   const [responseError, setResponseError] = useState("");
   const noRef = useRef<HTMLButtonElement>(null);
   const maybeRef = useRef<HTMLButtonElement>(null);
+  const ignoredTouchClickRef = useRef<TrickChoice | null>(null);
   const hasPhoto = Boolean(backgroundPath && backgroundTone);
   const backgroundUrl = hasPhoto ? `/api/invites/${token}/background` : undefined;
+  const dateOptions = schedule?.mode === "range" ? inviteScheduleDates(schedule) : [];
+  const responseDate = schedule?.mode === "single" ? schedule.date : selectedDate ?? undefined;
+  const letterQuestion = schedule?.mode === "single"
+    ? `Usciamo ${formatInviteDate(schedule.date)}?`
+    : schedule?.mode === "range"
+      ? "Quando usciamo?"
+      : "Questa settimana usciamo?";
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -64,7 +85,7 @@ export function InvitationExperience({
   }
 
   function isTricked(choice: TrickChoice) {
-    return nearbyChoice === choice || confirmingChoice === choice;
+    return nearbyChoice === choice || revealedChoice === choice || confirmingChoice === choice;
   }
 
   function getChoiceLabel(choice: Choice) {
@@ -99,24 +120,62 @@ export function InvitationExperience({
   }
 
   function choose(choice: Choice) {
+    if (choice !== "yes" && !isTricked(choice)) {
+      setRevealedChoice(choice);
+      setNearbyChoice(null);
+      return;
+    }
+
     if (confirmingChoice !== choice) {
       setConfirmingChoice(choice);
       setNearbyChoice(null);
+      setRevealedChoice(choice === "yes" ? null : choice);
       return;
     }
 
     void submitChoice();
   }
 
+  function prepareTouchChoice(event: ReactPointerEvent<HTMLButtonElement>, choice: Choice) {
+    if (event.pointerType !== "touch" || choice === "yes" || isTricked(choice)) return;
+
+    ignoredTouchClickRef.current = choice;
+    setRevealedChoice(choice);
+    setNearbyChoice(null);
+  }
+
+  function handleChoiceClick(choice: Choice) {
+    if (choice !== "yes" && ignoredTouchClickRef.current === choice) {
+      ignoredTouchClickRef.current = null;
+      return;
+    }
+
+    choose(choice);
+  }
+
+  function chooseDate(date: string) {
+    setSelectedDate(date);
+    setResponseError("");
+  }
+
   async function submitChoice() {
+    if ((schedule?.mode === "range" && !selectedDate) || submissionStatus === "sending") return;
+
     setPhase("answered");
+    setSubmissionStatus("sending");
     setResponseError("");
 
     try {
-      const response = await fetch(`/api/invites/${token}/respond`, { method: "POST" });
+      const response = await fetch(`/api/invites/${token}/respond`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ selectedDate: responseDate }),
+      });
       if (!response.ok) throw new Error("response failed");
+      setSubmissionStatus("success");
     } catch {
-      setResponseError("La risposta non è partita, ma il sì resta valido. Riprova tra poco.");
+      setSubmissionStatus("error");
+      setResponseError("La risposta non è partita. Tocca Riprova per inviarmela.");
     }
   }
 
@@ -124,7 +183,7 @@ export function InvitationExperience({
     <main
       className={`invite-scene phase-${phase}${hasPhoto ? ` has-photo on-${backgroundTone}` : ""}`}
       id="main-content"
-      onPointerMove={phase === "letter" ? handleProximity : undefined}
+      onPointerMove={phase === "letter" && schedule?.mode !== "range" ? handleProximity : undefined}
     >
       {backgroundUrl ? (
         <div
@@ -165,60 +224,109 @@ export function InvitationExperience({
       ) : null}
 
       {phase === "letter" ? (
-        <section className="letter-screen" aria-labelledby="letter-question">
+        <section
+          className={`letter-screen${schedule ? " is-scheduled" : ""}${schedule?.mode === "range" ? " is-date-picker" : ""}`}
+          aria-labelledby="letter-question"
+        >
           {showFold ? <span className="letter-fold" aria-hidden="true" /> : null}
           <div className="letter-content">
             <p className="letter-to">Per {name}</p>
-            <h1 id="letter-question">Questa settimana usciamo?</h1>
-            <div
-              className="choice-group"
-              aria-label="Scegli una risposta"
-            >
-              {(["yes", "no", "maybe"] as const).map((choice) => {
-                const isTrickChoice = choice !== "yes";
-                const isConverted = isTrickChoice && isTricked(choice);
-                const isConfirming = confirmingChoice === choice;
+            <h1 id="letter-question">{letterQuestion}</h1>
 
-                return (
-                  <div className={`choice-row${isConfirming ? " is-confirming" : ""}`} key={choice}>
-                    <button
-                      ref={choice === "no" ? noRef : choice === "maybe" ? maybeRef : undefined}
-                      className={`choice${choice === "yes" ? " choice-primary" : " choice-trick"}${isConverted ? " is-converted" : ""}${isConfirming ? " is-confirming" : ""}`}
-                      type="button"
-                      onFocus={() => isTrickChoice && setNearbyChoice(choice)}
-                      onBlur={() => isTrickChoice && !isConfirming && setNearbyChoice(null)}
-                      onClick={() => choose(choice)}
-                      aria-label={isConfirming ? `Conferma: ${getChoiceLabel(choice)}` : getChoiceLabel(choice)}
-                    >
-                      <span className="choice-copy" key={isConfirming ? "confirm" : getChoiceLabel(choice)}>
-                        {isConfirming ? <CheckIcon /> : null}
-                        {isConfirming ? "Conferma" : getChoiceLabel(choice)}
-                      </span>
-                    </button>
-                    <button
-                      className={`choice-cancel${isConfirming ? " is-visible" : ""}`}
-                      type="button"
-                      onClick={() => {
-                        setConfirmingChoice(null);
-                        setNearbyChoice(null);
-                      }}
-                      disabled={!isConfirming}
-                      tabIndex={isConfirming ? 0 : -1}
-                      aria-hidden={!isConfirming}
-                      aria-label="Annulla la scelta"
-                    >
-                      <CloseIcon />
+            {schedule?.mode === "range" ? (
+              <div className="date-choice-flow">
+                <div className="date-choice-grid" aria-label="Scegli il giorno">
+                  {dateOptions.map((date) => {
+                    const isSelected = selectedDate === date;
+                    return (
+                      <button
+                        className={`date-choice${isSelected ? " is-selected" : ""}`}
+                        type="button"
+                        data-date={date}
+                        aria-pressed={isSelected}
+                        onClick={() => chooseDate(date)}
+                        key={date}
+                      >
+                        <span>{formatInviteWeekday(date)}</span>
+                        <strong>{formatInviteDayMonth(date)}</strong>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {selectedDate ? (
+                  <div className="date-confirmation" aria-live="polite" key={selectedDate}>
+                    <p>
+                      <span>Confermi questo giorno:</span>
+                      <strong>“{formatInviteDate(selectedDate)}”</strong>
+                    </p>
+                    <button className="choice choice-primary" type="button" onClick={() => void submitChoice()}>
+                      <span className="choice-copy"><CheckIcon /> Conferma</span>
                     </button>
                   </div>
-                );
-              })}
-            </div>
-            {confirmingChoice ? (
-              <p className="trick-hint" aria-live="polite">
-                <span>Confermi la tua scelta!</span>
-                <strong>{getChoiceLabel(confirmingChoice)}</strong>
-              </p>
-            ) : null}
+                ) : null}
+              </div>
+            ) : (
+              <>
+                <div className="choice-group" aria-label="Scegli una risposta">
+                  {(["yes", "no", "maybe"] as const).map((choice) => {
+                    const isTrickChoice = choice !== "yes";
+                    const isConverted = isTrickChoice && isTricked(choice);
+                    const isConfirming = confirmingChoice === choice;
+
+                    return (
+                      <div className={`choice-row${isConfirming ? " is-confirming" : ""}`} key={choice}>
+                        <button
+                          ref={choice === "no" ? noRef : choice === "maybe" ? maybeRef : undefined}
+                          className={`choice${choice === "yes" ? " choice-primary" : " choice-trick"}${isConverted ? " is-converted" : ""}${isConfirming ? " is-confirming" : ""}`}
+                          type="button"
+                          data-choice={choice}
+                          onPointerDown={(event) => prepareTouchChoice(event, choice)}
+                          onPointerCancel={() => {
+                            ignoredTouchClickRef.current = null;
+                            setRevealedChoice((current) => current === choice ? null : current);
+                          }}
+                          onBlur={() => isTrickChoice && !isConfirming && setNearbyChoice(null)}
+                          onClick={() => handleChoiceClick(choice)}
+                          aria-label={isConfirming ? `Conferma: ${getChoiceLabel(choice)}` : getChoiceLabel(choice)}
+                        >
+                          <span
+                            className="choice-copy"
+                            aria-live={isTrickChoice ? "polite" : undefined}
+                            key={isConfirming ? "confirm" : getChoiceLabel(choice)}
+                          >
+                            {isConfirming ? <CheckIcon /> : null}
+                            {isConfirming ? "Conferma" : getChoiceLabel(choice)}
+                          </span>
+                        </button>
+                        <button
+                          className={`choice-cancel${isConfirming ? " is-visible" : ""}`}
+                          type="button"
+                          onClick={() => {
+                            setConfirmingChoice(null);
+                            setNearbyChoice(null);
+                            setRevealedChoice(null);
+                            ignoredTouchClickRef.current = null;
+                          }}
+                          disabled={!isConfirming}
+                          tabIndex={isConfirming ? 0 : -1}
+                          aria-hidden={!isConfirming}
+                          aria-label="Annulla la scelta"
+                        >
+                          <CloseIcon />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                {confirmingChoice ? (
+                  <p className="trick-hint" aria-live="polite">
+                    <span>Confermi la tua scelta!</span>
+                    <strong>“{getChoiceLabel(confirmingChoice)}”</strong>
+                  </p>
+                ) : null}
+              </>
+            )}
           </div>
         </section>
       ) : null}
@@ -226,10 +334,39 @@ export function InvitationExperience({
       {phase === "answered" ? (
         <section className="answer-screen" aria-labelledby="answer-title">
           <div className="answer-content">
-            <p>Risposta ricevuta</p>
-            <h1 id="answer-title">Lo sapevo.</h1>
-            <span className="answer-note">Ci vediamo questa settimana.</span>
-            {responseError ? <p className="field-error answer-error" role="alert">{responseError}</p> : null}
+            <p>
+              {submissionStatus === "sending"
+                ? "Invio in corso…"
+                : submissionStatus === "error"
+                  ? "Invio non riuscito"
+                  : "Risposta ricevuta"}
+            </p>
+            <h1 id="answer-title">
+              {submissionStatus === "sending"
+                ? "Un attimo."
+                : submissionStatus === "error"
+                  ? "Quasi."
+                  : schedule?.mode === "range"
+                    ? "Perfetto."
+                    : "Lo sapevo."}
+            </h1>
+            <span className="answer-note">
+              {submissionStatus === "sending"
+                ? "Sto mandando la tua risposta."
+                : submissionStatus === "error"
+                  ? "La scelta è pronta, manca solo l’invio."
+                  : responseDate
+                    ? `Ci vediamo ${formatInviteDate(responseDate)}.`
+                    : "Ci vediamo questa settimana."}
+            </span>
+            {responseError ? (
+              <>
+                <p className="field-error answer-error" role="alert">{responseError}</p>
+                <button className="button choice-primary answer-retry" type="button" onClick={() => void submitChoice()}>
+                  Riprova invio
+                </button>
+              </>
+            ) : null}
           </div>
         </section>
       ) : null}

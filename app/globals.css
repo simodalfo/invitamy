@@ -356,6 +356,68 @@ button:disabled {
   gap: var(--space-lg);
 }
 
+.schedule-fieldset {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.schedule-fieldset legend {
+  margin-bottom: var(--space-xs);
+  padding: 0;
+  font-size: var(--text-small);
+  font-weight: 650;
+}
+
+.schedule-mode {
+  display: flex;
+  width: 100%;
+  gap: var(--space-xxs);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-xxs);
+}
+
+.schedule-mode button {
+  flex: 1;
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: calc(var(--radius-md) - var(--space-xxs));
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-small);
+  font-weight: 650;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.schedule-mode button[aria-pressed="true"] {
+  background: var(--color-white);
+  color: var(--color-ink);
+  box-shadow: 0 0.125rem 0.25rem oklch(0.25 0.03 250 / 0.12);
+}
+
+.schedule-mode button:focus-visible {
+  outline: 0.1875rem solid var(--color-blue-dark);
+  outline-offset: -0.125rem;
+}
+
+.schedule-fields {
+  margin-top: var(--space-xxs);
+}
+
+.date-range-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-xxs);
+}
+
 .photo-picker {
   position: relative;
   display: grid;
@@ -902,6 +964,20 @@ button:disabled {
   animation: landing-reveal 620ms 560ms var(--ease-out-expo) both;
 }
 
+.letter-screen.is-scheduled .letter-content h1 {
+  max-width: 12ch;
+  font-size: 3rem;
+}
+
+.letter-screen.is-date-picker {
+  overflow-y: auto;
+}
+
+.letter-screen.is-date-picker .letter-content {
+  min-height: 100svh;
+  justify-content: flex-start;
+}
+
 .has-photo .letter-screen {
   display: grid;
   place-items: center;
@@ -916,6 +992,91 @@ button:disabled {
   background: var(--guest-panel);
   padding: var(--space-lg);
   backdrop-filter: blur(1.375rem) saturate(1.12);
+}
+
+.has-photo .letter-screen.is-date-picker {
+  display: block;
+  padding: 0 var(--space-md);
+}
+
+.has-photo .letter-screen.is-date-picker .letter-content {
+  min-height: auto;
+  margin-block: max(var(--space-xl), env(safe-area-inset-top)) max(var(--space-xl), env(safe-area-inset-bottom));
+}
+
+.date-choice-flow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.date-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs);
+  animation: landing-reveal 600ms 760ms var(--ease-out-expo) both;
+}
+
+.date-choice {
+  display: flex;
+  min-height: 4rem;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.125rem;
+  border: 0.0625rem solid var(--guest-panel-line);
+  border-radius: var(--radius-md);
+  background: var(--guest-choice);
+  color: var(--guest-choice-ink);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 180ms ease, color 180ms ease, transform 120ms var(--ease-out-quart);
+}
+
+.date-choice > span {
+  font-size: var(--text-small);
+  text-transform: capitalize;
+}
+
+.date-choice > strong {
+  font-size: var(--text-body);
+  font-weight: 750;
+}
+
+.date-choice.is-selected {
+  border-color: transparent;
+  background: var(--guest-primary);
+  color: var(--guest-primary-ink);
+}
+
+.date-choice:active {
+  transform: scale(0.98);
+}
+
+.date-confirmation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  animation: landing-reveal 280ms var(--ease-out-expo) both;
+}
+
+.date-confirmation p {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xxs);
+  margin: 0;
+  color: var(--guest-muted);
+  font-size: var(--text-small);
+  text-align: center;
+}
+
+.date-confirmation p strong {
+  color: var(--guest-ink);
+  font-size: var(--text-lead);
+  font-weight: 750;
+  line-height: 1.15;
 }
 
 .choice-group {
@@ -1105,6 +1266,10 @@ button:disabled {
   margin-top: var(--space-lg) !important;
 }
 
+.answer-retry {
+  margin-top: var(--space-xs);
+}
+
 .not-found {
   display: flex;
   min-height: 100svh;
@@ -1289,6 +1454,12 @@ button:disabled {
     grid-template-columns: 1fr 1fr;
     align-content: center;
     column-gap: var(--space-xl);
+    padding-top: max(var(--space-lg), env(safe-area-inset-top));
+  }
+
+  .letter-screen.is-date-picker .letter-content {
+    display: flex;
+    min-height: auto;
     padding-top: max(var(--space-lg), env(safe-area-inset-top));
   }
 

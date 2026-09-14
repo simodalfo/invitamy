@@ -21,7 +21,7 @@ export default async function AdminPage() {
         <div className="admin-intro">
           <p className="admin-greeting">Ciao.</p>
           <h1 id="generator-title">Chi vuoi sorprendere?</h1>
-          <p>Scrivi il nome, genera il link e mandalo senza aggiungere altro.</p>
+          <p>Scegli nome e disponibilità, genera il link e mandalo senza aggiungere altro.</p>
         </div>
         <InviteGenerator />
       </section>

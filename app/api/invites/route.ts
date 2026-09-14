@@ -7,6 +7,7 @@ import {
   normalizeName,
 } from "@/lib/invites";
 import { isSameOrigin } from "@/lib/request-security";
+import { normalizeInviteSchedule } from "@/lib/invite-schedule";
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
@@ -22,10 +23,12 @@ export async function POST(request: Request) {
       name?: unknown;
       backgroundPath?: unknown;
       backgroundTone?: unknown;
+      schedule?: unknown;
     };
     const name = normalizeName(body.name);
     const backgroundPath = normalizeBackgroundPath(body.backgroundPath);
     const backgroundTone = normalizeBackgroundTone(body.backgroundTone);
+    const schedule = normalizeInviteSchedule(body.schedule);
 
     if (!name) {
       return NextResponse.json({ error: "Inserisci il nome della persona da invitare." }, { status: 400 });
@@ -35,9 +38,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "La foto personalizzata non è valida. Selezionala di nuovo." }, { status: 400 });
     }
 
+    if (!schedule) {
+      return NextResponse.json({ error: "Scegli un giorno oppure un periodo fino a sette giorni." }, { status: 400 });
+    }
+
     const invite = await createInvite(
       name,
-      backgroundPath && backgroundTone ? { path: backgroundPath, tone: backgroundTone } : undefined,
+      {
+        background: backgroundPath && backgroundTone
+          ? { path: backgroundPath, tone: backgroundTone }
+          : undefined,
+        schedule,
+      },
     );
     const url = new URL(`/i/${invite.token}`, request.url).toString();
     return NextResponse.json({ url, name: invite.name });

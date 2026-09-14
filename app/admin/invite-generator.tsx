@@ -1,9 +1,15 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import {
+  MAX_INVITE_RANGE_DAYS,
+  type InviteSchedule,
+  normalizeInviteSchedule,
+} from "@/lib/invite-schedule";
 
 type GeneratedInvite = { url: string; name: string };
 type BackgroundTone = "light" | "dark";
+type ScheduleMode = InviteSchedule["mode"];
 type PreparedPhoto = {
   blob: Blob;
   previewUrl: string;
@@ -11,6 +17,14 @@ type PreparedPhoto = {
 };
 
 const maxPhotoBytes = 4_000_000;
+
+function shiftDate(value: string, days: number) {
+  if (!value) return "";
+  const date = new Date(`${value}T12:00:00Z`);
+  if (Number.isNaN(date.getTime())) return "";
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
 
 function loadPhoto(url: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
@@ -82,6 +96,11 @@ async function preparePhoto(file: File): Promise<PreparedPhoto> {
 
 export function InviteGenerator() {
   const [name, setName] = useState("");
+  const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("single");
+  const [singleDate, setSingleDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [minimumDate, setMinimumDate] = useState("");
   const [photo, setPhoto] = useState<PreparedPhoto | null>(null);
   const [invite, setInvite] = useState<GeneratedInvite | null>(null);
   const [error, setError] = useState("");
@@ -91,9 +110,14 @@ export function InviteGenerator() {
   const [copied, setCopied] = useState(false);
   const [canShare, setCanShare] = useState(false);
   const previewUrlRef = useRef<string | null>(null);
+  const earliestRangeEnd = shiftDate(startDate, 1) || minimumDate;
+  const latestRangeEnd = shiftDate(startDate, MAX_INVITE_RANGE_DAYS - 1) || undefined;
 
   useEffect(() => {
     setCanShare(typeof navigator.share === "function");
+    const now = new Date();
+    const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+    setMinimumDate(localDate.toISOString().slice(0, 10));
     return () => {
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
     };
@@ -128,10 +152,32 @@ export function InviteGenerator() {
     setError("");
   }
 
+  function changeScheduleMode(mode: ScheduleMode) {
+    setScheduleMode(mode);
+    setInvite(null);
+    setError("");
+  }
+
   async function generateInvite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setCopied(false);
+
+    const schedule = normalizeInviteSchedule(
+      scheduleMode === "single"
+        ? { mode: "single", date: singleDate }
+        : { mode: "range", startDate, endDate },
+    );
+
+    if (!schedule) {
+      setError(
+        scheduleMode === "single"
+          ? "Scegli il giorno dell’invito."
+          : `Scegli un periodo da 2 a ${MAX_INVITE_RANGE_DAYS} giorni.`,
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -168,6 +214,7 @@ export function InviteGenerator() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
+          schedule,
           ...(backgroundPath && photo ? { backgroundPath, backgroundTone: photo.tone } : {}),
         }),
       });
@@ -229,6 +276,92 @@ export function InviteGenerator() {
           />
           <p className="field-help" id="name-help">Comparirà nel saluto iniziale.</p>
         </div>
+
+        <fieldset className="schedule-fieldset">
+          <legend>Quando?</legend>
+          <div className="schedule-mode" role="group" aria-label="Tipo di data">
+            <button
+              type="button"
+              aria-pressed={scheduleMode === "single"}
+              onClick={() => changeScheduleMode("single")}
+            >
+              Giorno preciso
+            </button>
+            <button
+              type="button"
+              aria-pressed={scheduleMode === "range"}
+              onClick={() => changeScheduleMode("range")}
+            >
+              Più giorni
+            </button>
+          </div>
+
+          {scheduleMode === "single" ? (
+            <div className="field-group schedule-fields">
+              <label htmlFor="invite-date">Giorno dell’invito</label>
+              <input
+                id="invite-date"
+                name="date"
+                type="date"
+                min={minimumDate || undefined}
+                value={singleDate}
+                onChange={(event) => {
+                  setSingleDate(event.target.value);
+                  setInvite(null);
+                  setError("");
+                }}
+                required
+              />
+              <p className="field-help">Chi riceve il link potrà confermarlo.</p>
+            </div>
+          ) : (
+            <div className="date-range-grid">
+              <div className="field-group">
+                <label htmlFor="invite-start-date">Dal</label>
+                <input
+                  id="invite-start-date"
+                  name="startDate"
+                  type="date"
+                  min={minimumDate || undefined}
+                  value={startDate}
+                  onChange={(event) => {
+                    const nextStartDate = event.target.value;
+                    const nextEarliestEnd = shiftDate(nextStartDate, 1);
+                    const nextLatestEnd = shiftDate(nextStartDate, MAX_INVITE_RANGE_DAYS - 1);
+                    setStartDate(nextStartDate);
+                    if (
+                      endDate
+                      && (endDate < nextEarliestEnd || endDate > nextLatestEnd)
+                    ) {
+                      setEndDate("");
+                    }
+                    setInvite(null);
+                    setError("");
+                  }}
+                  required
+                />
+              </div>
+              <div className="field-group">
+                <label htmlFor="invite-end-date">Al</label>
+                <input
+                  id="invite-end-date"
+                  name="endDate"
+                  type="date"
+                  min={earliestRangeEnd || undefined}
+                  max={latestRangeEnd}
+                  value={endDate}
+                  onChange={(event) => {
+                    setEndDate(event.target.value);
+                    setInvite(null);
+                    setError("");
+                  }}
+                  required
+                />
+              </div>
+              <p className="field-help">Fino a {MAX_INVITE_RANGE_DAYS} giorni tra cui scegliere.</p>
+            </div>
+          )}
+        </fieldset>
 
         <div className="field-group">
           <label htmlFor="invite-photo">Foto di sfondo · facoltativa</label>
@@ -296,7 +429,12 @@ export function InviteGenerator() {
         <button
           className="button button-primary"
           type="submit"
-          disabled={loading || preparingPhoto || !name.trim()}
+          disabled={
+            loading
+            || preparingPhoto
+            || !name.trim()
+            || (scheduleMode === "single" ? !singleDate : !startDate || !endDate)
+          }
         >
           {loading ? loadingLabel : "Genera link"}
         </button>
