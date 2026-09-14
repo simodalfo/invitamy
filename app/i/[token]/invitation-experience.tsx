@@ -1,6 +1,12 @@
 "use client";
 
-import { PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  PointerEvent as ReactPointerEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import type { BackgroundTone } from "@/lib/invites";
 import {
   formatInviteDate,
@@ -21,6 +27,45 @@ const choiceCopy: Record<Choice, string> = {
   maybe: "Non so",
 };
 
+const confettiColors = [
+  "oklch(0.63 0.23 25)",
+  "oklch(0.60 0.18 253)",
+  "oklch(0.68 0.18 145)",
+  "oklch(0.82 0.17 88)",
+  "oklch(0.61 0.20 305)",
+  "oklch(0.72 0.19 52)",
+];
+
+function ConfettiBurst() {
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIsVisible(false), 5_200);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  if (!isVisible) return null;
+
+  return (
+    <div className="confetti-layer" aria-hidden="true">
+      {Array.from({ length: 72 }, (_, index) => {
+        const style = {
+          left: `${(index * 47 + 9) % 100}%`,
+          width: `${6 + (index % 3) * 2}px`,
+          height: `${10 + (index % 4) * 2}px`,
+          backgroundColor: confettiColors[index % confettiColors.length],
+          animationDelay: `${((index * 19) % 90) / 100}s`,
+          animationDuration: `${2.7 + ((index * 13) % 14) / 10}s`,
+          "--confetti-drift": `${((index * 31) % 91) - 45}px`,
+          "--confetti-spin": `${540 + ((index * 43) % 540)}deg`,
+        } as CSSProperties;
+
+        return <span className={`confetti-piece shape-${index % 3}`} style={style} key={index} />;
+      })}
+    </div>
+  );
+}
+
 function CheckIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 20 20">
@@ -40,12 +85,14 @@ function CloseIcon() {
 export function InvitationExperience({
   token,
   name,
+  message,
   schedule,
   backgroundPath,
   backgroundTone,
 }: {
   token: string;
   name: string;
+  message?: string;
   schedule?: InviteSchedule;
   backgroundPath?: string;
   backgroundTone?: BackgroundTone;
@@ -199,9 +246,12 @@ export function InvitationExperience({
           <div className="greeting-block">
             <h1 id="invite-greeting">
               <span className="greeting-hello">Ciao,</span>
-              <span className="greeting-name">{name}.</span>
+              <span className="greeting-name">{name}!</span>
             </h1>
-            <p className="greeting-message">C’è un messaggio per te!</p>
+            <div className="greeting-copy">
+              <p className="greeting-message">C’è un messaggio per te da Simo</p>
+              {message ? <p className="greeting-personal-message">{message}</p> : null}
+            </div>
           </div>
 
           <button
@@ -232,6 +282,7 @@ export function InvitationExperience({
           <div className="letter-content">
             <p className="letter-to">Per {name}</p>
             <h1 id="letter-question">{letterQuestion}</h1>
+            <p className="acceptance-hint">Doppio click per confermare ;)</p>
 
             {schedule?.mode === "range" ? (
               <div className="date-choice-flow">
@@ -260,7 +311,7 @@ export function InvitationExperience({
                       <span>Confermi questo giorno:</span>
                       <strong>“{formatInviteDate(selectedDate)}”</strong>
                     </p>
-                    <button className="choice choice-primary" type="button" onClick={() => void submitChoice()}>
+                    <button className="choice choice-primary choice-confirm" type="button" onClick={() => void submitChoice()}>
                       <span className="choice-copy"><CheckIcon /> Conferma</span>
                     </button>
                   </div>
@@ -278,7 +329,7 @@ export function InvitationExperience({
                       <div className={`choice-row${isConfirming ? " is-confirming" : ""}`} key={choice}>
                         <button
                           ref={choice === "no" ? noRef : choice === "maybe" ? maybeRef : undefined}
-                          className={`choice${choice === "yes" ? " choice-primary" : " choice-trick"}${isConverted ? " is-converted" : ""}${isConfirming ? " is-confirming" : ""}`}
+                          className={`choice${choice === "yes" ? " choice-primary" : " choice-trick"}${isConverted ? " is-converted" : ""}${isConfirming ? " is-confirming choice-confirm" : ""}`}
                           type="button"
                           data-choice={choice}
                           onPointerDown={(event) => prepareTouchChoice(event, choice)}
@@ -333,6 +384,7 @@ export function InvitationExperience({
 
       {phase === "answered" ? (
         <section className="answer-screen" aria-labelledby="answer-title">
+          {submissionStatus === "success" ? <ConfettiBurst /> : null}
           <div className="answer-content">
             <p>
               {submissionStatus === "sending"
@@ -348,7 +400,7 @@ export function InvitationExperience({
                   ? "Quasi."
                   : schedule?.mode === "range"
                     ? "Perfetto."
-                    : "Lo sapevo."}
+                    : "Lo sapevo :)"}
             </h1>
             <span className="answer-note">
               {submissionStatus === "sending"

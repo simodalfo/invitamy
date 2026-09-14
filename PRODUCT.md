@@ -14,7 +14,7 @@ Un solo amministratore usa lo strumento in privato per preparare e condividere i
 
 ## Product Purpose
 
-Creare una piccola esperienza-gioco personale: l'amministratore inserisce un nome, propone un giorno oppure un breve periodo, può scegliere una foto significativa, genera un link univoco e lo invia. Il destinatario viene accolto per nome, scopre una lettera animata e conferma la proposta oppure sceglie uno dei giorni disponibili. La risposta arriva al proprietario tramite Telegram.
+Creare una piccola esperienza-gioco personale: l'amministratore inserisce un nome, può aggiungere una frase personale, propone un giorno oppure un breve periodo, può scegliere una foto significativa, genera un link univoco e lo invia. Il destinatario viene accolto per nome, scopre una lettera animata e conferma la proposta oppure sceglie uno dei giorni disponibili. La risposta arriva al proprietario tramite Telegram.
 
 Il prodotto ha successo quando preparare il link richiede pochi secondi e la rivelazione risulta fluida, sorprendente e divertente.
 

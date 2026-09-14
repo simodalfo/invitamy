@@ -41,6 +41,8 @@ Four-point base scale: 4, 8, 12, 16, 24, 32, 48, 64, 96px. Related controls use 
 - The photo picker compresses locally, previews the final contrast treatment, and allows a manual light/dark override.
 - Scheduling uses a familiar two-option segmented control: one exact day or a range of up to seven days.
 - Date choices are compact two-column controls on the guest letter, followed by an explicit confirmation state.
+- Confirmation uses the product success green; a successful response triggers one short, non-interactive confetti shower.
+- The optional personal message follows the fixed greeting and remains short enough for the opening viewport.
 - Panels use 16px corners maximum, either a hairline border or a shallow shadow, never both.
 - Translucent panels are reserved for the guest copy placed over photography; blur exists only to preserve legibility.
 - The envelope and letter are semantic HTML/CSS shapes with paper texture restricted to those objects.

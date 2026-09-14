@@ -6,6 +6,7 @@ import {
   type InviteSchedule,
   normalizeInviteSchedule,
 } from "@/lib/invite-schedule";
+import { MAX_PERSONAL_MESSAGE_LENGTH } from "@/lib/invite-message";
 
 type GeneratedInvite = { url: string; name: string };
 type BackgroundTone = "light" | "dark";
@@ -96,6 +97,7 @@ async function preparePhoto(file: File): Promise<PreparedPhoto> {
 
 export function InviteGenerator() {
   const [name, setName] = useState("");
+  const [personalMessage, setPersonalMessage] = useState("");
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("single");
   const [singleDate, setSingleDate] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -215,6 +217,7 @@ export function InviteGenerator() {
         body: JSON.stringify({
           name,
           schedule,
+          ...(personalMessage.trim() ? { message: personalMessage } : {}),
           ...(backgroundPath && photo ? { backgroundPath, backgroundTone: photo.tone } : {}),
         }),
       });
@@ -275,6 +278,28 @@ export function InviteGenerator() {
             required
           />
           <p className="field-help" id="name-help">Comparirà nel saluto iniziale.</p>
+        </div>
+
+        <div className="field-group">
+          <label htmlFor="invite-message">Messaggio personale · facoltativo</label>
+          <textarea
+            id="invite-message"
+            name="message"
+            rows={3}
+            maxLength={MAX_PERSONAL_MESSAGE_LENGTH}
+            placeholder="Una frase che capirà solo questa persona"
+            value={personalMessage}
+            onChange={(event) => {
+              setPersonalMessage(event.target.value);
+              setInvite(null);
+              setError("");
+            }}
+            aria-describedby="message-help"
+          />
+          <p className="field-help field-help-count" id="message-help">
+            <span>Comparirà subito dopo il saluto.</span>
+            <span>{personalMessage.length}/{MAX_PERSONAL_MESSAGE_LENGTH}</span>
+          </p>
         </div>
 
         <fieldset className="schedule-fieldset">
@@ -382,7 +407,7 @@ export function InviteGenerator() {
             {photo ? (
               <span className="photo-preview" style={{ backgroundImage: `url(${JSON.stringify(photo.previewUrl)})` }}>
                 <span className="photo-preview-shade" aria-hidden="true" />
-                <span className="photo-preview-title">Ciao, {name.trim() || "tu"}.</span>
+                <span className="photo-preview-title">Ciao, {name.trim() || "tu"}!</span>
                 <span className="photo-change">Cambia foto</span>
               </span>
             ) : (

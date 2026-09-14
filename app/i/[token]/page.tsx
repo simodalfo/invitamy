@@ -13,6 +13,7 @@ export default async function InvitationPage({ params }: { params: Promise<{ tok
     <InvitationExperience
       token={invite.token}
       name={invite.name}
+      message={invite.message}
       schedule={invite.schedule}
       backgroundPath={invite.backgroundPath}
       backgroundTone={invite.backgroundTone}

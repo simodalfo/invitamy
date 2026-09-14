@@ -11,6 +11,8 @@
   --color-secret: oklch(0.58 0.20 23);
   --color-error: oklch(0.50 0.18 25);
   --color-success: oklch(0.48 0.12 155);
+  --color-confirm: oklch(0.54 0.15 145);
+  --color-confirm-hover: oklch(0.48 0.14 145);
   --color-white: oklch(1 0 0);
   --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   --font-display: "Bodoni 72", Didot, "Times New Roman", serif;
@@ -62,7 +64,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -83,6 +86,7 @@ a {
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
+textarea:focus-visible,
 [tabindex]:focus-visible {
   outline: 0.1875rem solid var(--color-secret);
   outline-offset: 0.1875rem;
@@ -150,6 +154,7 @@ button:disabled {
 }
 
 .field-group input,
+.field-group textarea,
 .link-row input {
   width: 100%;
   min-height: 3.25rem;
@@ -161,15 +166,32 @@ button:disabled {
   transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
+.field-group textarea {
+  min-height: 6.5rem;
+  resize: vertical;
+  line-height: 1.4;
+}
+
 .field-group input::placeholder {
   color: oklch(0.43 0.025 250);
 }
 
+.field-group textarea::placeholder {
+  color: oklch(0.43 0.025 250);
+}
+
 .field-group input:focus,
+.field-group textarea:focus,
 .link-row input:focus {
   border-color: var(--color-blue-dark);
   box-shadow: 0 0 0 0.1875rem oklch(0.60 0.16 253 / 0.14);
   outline: none;
+}
+
+.field-help-count {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
 }
 
 .field-group input[aria-invalid="true"] {
@@ -662,6 +684,11 @@ button:disabled {
   isolation: isolate;
 }
 
+.invite-scene.phase-intro,
+.invite-scene.phase-ready {
+  overflow-y: auto;
+}
+
 .invite-scene.has-photo.on-dark {
   --guest-ink: oklch(0.99 0.004 250);
   --guest-muted: oklch(0.92 0.01 250 / 0.88);
@@ -794,6 +821,22 @@ button:disabled {
   font-size: var(--text-lead);
   line-height: 1.25;
   animation: landing-reveal 680ms 420ms var(--ease-out-expo) both;
+}
+
+.greeting-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.greeting-personal-message {
+  max-width: 28ch;
+  color: var(--guest-muted);
+  font-size: var(--text-body);
+  line-height: 1.4;
+  white-space: pre-line;
+  text-wrap: pretty;
+  animation: landing-reveal 680ms 540ms var(--ease-out-expo) both;
 }
 
 .envelope-trigger {
@@ -954,7 +997,7 @@ button:disabled {
 
 .letter-content h1 {
   max-width: 9ch;
-  margin: 0 0 var(--space-md);
+  margin: 0;
   font-family: var(--font-display);
   font-size: 3.25rem;
   font-weight: 400;
@@ -962,6 +1005,14 @@ button:disabled {
   letter-spacing: -0.035em;
   text-wrap: balance;
   animation: landing-reveal 620ms 560ms var(--ease-out-expo) both;
+}
+
+.acceptance-hint {
+  margin: calc(-1 * var(--space-md)) 0 0;
+  color: var(--guest-muted);
+  font-size: var(--text-small);
+  text-wrap: pretty;
+  animation: landing-reveal 580ms 680ms var(--ease-out-expo) both;
 }
 
 .letter-screen.is-scheduled .letter-content h1 {
@@ -1126,8 +1177,18 @@ button:disabled {
 }
 
 .choice.is-confirming {
-  background: var(--guest-primary);
-  color: var(--guest-primary-ink);
+  background: var(--color-confirm);
+  color: var(--color-white);
+}
+
+.choice-confirm {
+  background: var(--color-confirm);
+  color: var(--color-white);
+}
+
+.choice-confirm:focus-visible,
+.choice.is-confirming:focus-visible {
+  outline-color: var(--color-confirm-hover);
 }
 
 .choice-copy {
@@ -1218,10 +1279,39 @@ button:disabled {
 }
 
 .answer-content {
+  position: relative;
+  z-index: var(--z-fold);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-sm);
+}
+
+.confetti-layer {
+  position: fixed;
+  z-index: var(--z-content);
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -1.5rem;
+  display: block;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation-name: confetti-fall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.confetti-piece.shape-1 {
+  border-radius: 50%;
+}
+
+.confetti-piece.shape-2 {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 
 .has-photo .answer-screen {
@@ -1336,6 +1426,19 @@ button:disabled {
   to { opacity: 1; filter: blur(0); }
 }
 
+@keyframes confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -12svh, 0) rotate(0deg);
+  }
+  8% { opacity: 1; }
+  88% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--confetti-drift), 112svh, 0) rotate(var(--confetti-spin));
+  }
+}
+
 @media (min-width: 48rem) {
   .auth-panel {
     padding: var(--space-2xl);
@@ -1395,6 +1498,11 @@ button:disabled {
     background: var(--color-blue);
   }
 
+  .choice-confirm:hover,
+  .choice.is-confirming:hover {
+    background: var(--color-confirm-hover);
+  }
+
   .text-button:hover:not(:disabled) {
     background: var(--color-surface);
     color: var(--color-ink);
@@ -1413,6 +1521,12 @@ button:disabled {
   .has-photo .choice.is-converted:hover {
     background: var(--guest-primary);
     filter: brightness(0.94);
+  }
+
+  .has-photo .choice-confirm:hover,
+  .has-photo .choice.is-confirming:hover {
+    background: var(--color-confirm-hover);
+    filter: none;
   }
 }
 
@@ -1464,7 +1578,8 @@ button:disabled {
   }
 
   .letter-to,
-  .letter-content h1 {
+  .letter-content h1,
+  .acceptance-hint {
     grid-column: 1;
   }
 
@@ -1474,7 +1589,7 @@ button:disabled {
   }
 
   .choice-group {
-    grid-row: 1 / span 2;
+    grid-row: 1 / span 3;
   }
 }
 
@@ -1492,5 +1607,9 @@ button:disabled {
   .phase-intro .envelope-trigger {
     opacity: 1;
     transform: none;
+  }
+
+  .confetti-layer {
+    display: none;
   }
 }

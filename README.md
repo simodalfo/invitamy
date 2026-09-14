@@ -1,6 +1,6 @@
 # Invitamy
 
-Un invito personale che si comporta come un piccolo gioco. L'area privata consente a un solo amministratore di inserire un nome, scegliere un giorno o un periodo, aggiungere facoltativamente una foto e generare un link univoco. Il destinatario conferma il giorno proposto oppure ne sceglie uno tra quelli disponibili.
+Un invito personale che si comporta come un piccolo gioco. L'area privata consente a un solo amministratore di inserire un nome, aggiungere una frase personale, scegliere un giorno o un periodo, aggiungere facoltativamente una foto e generare un link univoco. Il destinatario conferma il giorno proposto oppure ne sceglie uno tra quelli disponibili.
 
 ## Avvio locale
 

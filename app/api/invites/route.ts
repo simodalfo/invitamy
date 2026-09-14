@@ -8,6 +8,7 @@ import {
 } from "@/lib/invites";
 import { isSameOrigin } from "@/lib/request-security";
 import { normalizeInviteSchedule } from "@/lib/invite-schedule";
+import { normalizePersonalMessage } from "@/lib/invite-message";
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
@@ -24,14 +25,20 @@ export async function POST(request: Request) {
       backgroundPath?: unknown;
       backgroundTone?: unknown;
       schedule?: unknown;
+      message?: unknown;
     };
     const name = normalizeName(body.name);
     const backgroundPath = normalizeBackgroundPath(body.backgroundPath);
     const backgroundTone = normalizeBackgroundTone(body.backgroundTone);
     const schedule = normalizeInviteSchedule(body.schedule);
+    const message = normalizePersonalMessage(body.message);
 
     if (!name) {
       return NextResponse.json({ error: "Inserisci il nome della persona da invitare." }, { status: 400 });
+    }
+
+    if (typeof body.message === "string" && body.message.trim() && !message) {
+      return NextResponse.json({ error: "Il messaggio personale è troppo lungo." }, { status: 400 });
     }
 
     if ((backgroundPath && !backgroundTone) || (!backgroundPath && backgroundTone)) {
@@ -49,6 +56,7 @@ export async function POST(request: Request) {
           ? { path: backgroundPath, tone: backgroundTone }
           : undefined,
         schedule,
+        message: message || undefined,
       },
     );
     const url = new URL(`/i/${invite.token}`, request.url).toString();

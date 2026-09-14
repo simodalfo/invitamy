@@ -6,10 +6,12 @@ import {
   normalizeInviteSchedule,
   scheduleIncludesDate,
 } from "@/lib/invite-schedule";
+import { normalizePersonalMessage } from "@/lib/invite-message";
 
 export type Invite = {
   token: string;
   name: string;
+  message?: string;
   createdAt: string;
   schedule?: InviteSchedule;
   backgroundPath?: string;
@@ -52,6 +54,7 @@ export async function createInvite(
   options: {
     background?: { path: string; tone: BackgroundTone };
     schedule?: InviteSchedule;
+    message?: string;
   } = {},
 ): Promise<Invite> {
   const createdAt = new Date().toISOString();
@@ -64,6 +67,7 @@ export async function createInvite(
       ? { backgroundPath: options.background.path, backgroundTone: options.background.tone }
       : {}),
     ...(options.schedule ? { schedule: options.schedule } : {}),
+    ...(options.message ? { message: options.message } : {}),
   };
   const plaintext = Buffer.from(JSON.stringify(payload), "utf8");
   const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
@@ -74,7 +78,7 @@ export async function createInvite(
 }
 
 export async function getInvite(token: string): Promise<Invite | null> {
-  if (!/^[a-zA-Z0-9_-]{48,1024}$/.test(token)) return null;
+  if (!/^[a-zA-Z0-9_-]{48,4096}$/.test(token)) return null;
 
   try {
     const packed = Buffer.from(token, "base64url");
@@ -92,11 +96,13 @@ export async function getInvite(token: string): Promise<Invite | null> {
       backgroundPath?: unknown;
       backgroundTone?: unknown;
       schedule?: unknown;
+      message?: unknown;
     };
     const name = normalizeName(parsed.name);
     const backgroundPath = normalizeBackgroundPath(parsed.backgroundPath);
     const backgroundTone = normalizeBackgroundTone(parsed.backgroundTone);
     const schedule = normalizeInviteSchedule(parsed.schedule);
+    const message = normalizePersonalMessage(parsed.message);
 
     if (!name || typeof parsed.createdAt !== "string") return null;
     return {
@@ -105,6 +111,7 @@ export async function getInvite(token: string): Promise<Invite | null> {
       createdAt: parsed.createdAt,
       ...(backgroundPath && backgroundTone ? { backgroundPath, backgroundTone } : {}),
       ...(schedule ? { schedule } : {}),
+      ...(message ? { message } : {}),
     };
   } catch {
     return null;
