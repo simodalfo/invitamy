@@ -15,9 +15,10 @@ import {
   inviteScheduleDates,
   type InviteSchedule,
 } from "@/lib/invite-schedule";
+import { MAX_RESPONSE_MESSAGE_LENGTH } from "@/lib/invite-message";
 
 type Phase = "intro" | "ready" | "letter" | "answered";
-type LetterStep = "choice" | "schedule";
+type LetterStep = "choice" | "schedule" | "message";
 type TrickChoice = "no";
 type Choice = "yes" | "no" | "maybe";
 type SubmissionStatus = "idle" | "sending" | "success" | "error";
@@ -105,6 +106,7 @@ export function InvitationExperience({
   const [revealedChoice, setRevealedChoice] = useState<TrickChoice | null>(null);
   const [confirmingChoice, setConfirmingChoice] = useState<Choice | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [replyMessage, setReplyMessage] = useState("");
   const [submissionStatus, setSubmissionStatus] = useState<SubmissionStatus>("idle");
   const [responseError, setResponseError] = useState("");
   const noRef = useRef<HTMLButtonElement>(null);
@@ -182,7 +184,7 @@ export function InvitationExperience({
       return;
     }
 
-    void submitChoice();
+    openMessageStep();
   }
 
   function prepareTouchChoice(event: ReactPointerEvent<HTMLButtonElement>, choice: Choice) {
@@ -207,6 +209,15 @@ export function InvitationExperience({
     setResponseError("");
   }
 
+  function openMessageStep() {
+    setLetterStep("message");
+    setConfirmingChoice(null);
+    setNearbyChoice(null);
+    setRevealedChoice(null);
+    ignoredTouchClickRef.current = null;
+    setResponseError("");
+  }
+
   async function submitChoice() {
     if ((schedule?.mode === "range" && !selectedDate) || submissionStatus === "sending") return;
 
@@ -218,7 +229,10 @@ export function InvitationExperience({
       const response = await fetch(`/api/invites/${token}/respond`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selectedDate: responseDate }),
+        body: JSON.stringify({
+          selectedDate: responseDate,
+          message: replyMessage.trim() || undefined,
+        }),
       });
       if (!response.ok) throw new Error("response failed");
       setSubmissionStatus("success");
@@ -277,7 +291,7 @@ export function InvitationExperience({
 
       {phase === "letter" ? (
         <section
-          className={`letter-screen${letterStep === "schedule" ? " is-scheduled" : ""}${letterStep === "schedule" && schedule?.mode === "range" ? " is-date-picker" : ""}`}
+          className={`letter-screen${letterStep !== "choice" ? " is-scheduled" : ""}${letterStep === "schedule" && schedule?.mode === "range" ? " is-date-picker" : ""}${letterStep === "message" ? " is-message" : ""}`}
           aria-labelledby="letter-question"
         >
           {showFold ? <span className="letter-fold" aria-hidden="true" /> : null}
@@ -345,7 +359,7 @@ export function InvitationExperience({
                   </p>
                 ) : null}
               </>
-            ) : schedule ? (
+            ) : letterStep === "schedule" && schedule ? (
               <>
                 <p className="letter-to">Perfetto, {name}</p>
                 <h1 id="letter-question">
@@ -379,7 +393,7 @@ export function InvitationExperience({
                           <span>Confermi questo giorno:</span>
                           <strong>“{formatInviteDate(selectedDate)}”</strong>
                         </p>
-                        <button className="choice choice-primary choice-confirm" type="button" onClick={() => void submitChoice()}>
+                        <button className="choice choice-primary choice-confirm" type="button" onClick={openMessageStep}>
                           <span className="choice-copy"><CheckIcon /> Conferma</span>
                         </button>
                       </div>
@@ -391,13 +405,51 @@ export function InvitationExperience({
                       <span>Il giorno proposto è:</span>
                       <strong>“{formatInviteDate(schedule.date)}”</strong>
                     </p>
-                    <button className="choice choice-primary choice-confirm" type="button" onClick={() => void submitChoice()}>
+                    <button className="choice choice-primary choice-confirm" type="button" onClick={openMessageStep}>
                       <span className="choice-copy"><CheckIcon /> Conferma il giorno</span>
                     </button>
                   </div>
                 )}
               </>
-            ) : null}
+            ) : (
+              <>
+                <p className="letter-to">Ultima cosa, {name}</p>
+                <h1 id="letter-question">Vuoi lasciarmi un messaggio?</h1>
+                <form
+                  className="reply-message-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void submitChoice();
+                  }}
+                >
+                  <div className="reply-message-field">
+                    <label htmlFor="reply-message">Il tuo messaggio · facoltativo</label>
+                    <textarea
+                      id="reply-message"
+                      name="message"
+                      rows={4}
+                      maxLength={MAX_RESPONSE_MESSAGE_LENGTH}
+                      placeholder="Scrivi qui…"
+                      value={replyMessage}
+                      onChange={(event) => {
+                        setReplyMessage(event.target.value);
+                        setResponseError("");
+                      }}
+                      aria-describedby="reply-message-help"
+                    />
+                    <p id="reply-message-help">
+                      <span>Arriverà insieme alla tua risposta.</span>
+                      <span>{replyMessage.length}/{MAX_RESPONSE_MESSAGE_LENGTH}</span>
+                    </p>
+                  </div>
+                  <button className="choice choice-primary choice-confirm" type="submit">
+                    <span className="choice-copy">
+                      <CheckIcon /> {replyMessage.trim() ? "Invia risposta" : "Continua senza messaggio"}
+                    </span>
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </section>
       ) : null}

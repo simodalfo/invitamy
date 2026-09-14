@@ -8,10 +8,12 @@ export async function sendInviteResponseNotification({
   name,
   schedule,
   selectedDate,
+  message,
 }: {
   name: string;
   schedule?: InviteSchedule;
   selectedDate?: string;
+  message?: string;
 }): Promise<TelegramNotificationStatus> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
@@ -19,9 +21,12 @@ export async function sendInviteResponseNotification({
 
   const date = selectedDate ? formatInviteDate(selectedDate) : undefined;
   const action = schedule?.mode === "range" ? "ha scelto" : "ha confermato";
-  const text = date
+  const responseSummary = date
     ? `📅 Nuova risposta\n${name} ${action}: ${date}.`
     : `📅 Nuova risposta\n${name} ha confermato l’invito.`;
+  const text = message
+    ? `${responseSummary}\n\n💬 Messaggio di ${name}:\n${message}`
+    : responseSummary;
 
   try {
     const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
